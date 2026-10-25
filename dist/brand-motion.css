@@ -1,0 +1,25 @@
+.brand-motion{height:107px;margin:-8px -8px 17px;position:relative;isolation:isolate;pointer-events:none}
+.brand-motion svg{display:block;width:100%;height:100%;overflow:visible}
+.brand-motion .brand-orbit{transform-origin:96px 57px;opacity:.6}
+.brand-motion .brand-assembly{transform-origin:76px 56px}
+.brand-motion .brand-stem{transform-origin:49px 54px}
+.brand-motion .brand-loop{transform-origin:73px 61px}
+.brand-motion .brand-dot{transform-origin:110px 78px}
+.brand-motion .brand-satellite{transform-origin:96px 57px}
+.brand-motion .brand-glint{transform-origin:140px 27px}
+#intro-dialog[open] .brand-assembly{animation:brand-arrive 1.1s var(--ease) both}
+#intro-dialog[open] .brand-stem{animation:brand-stem-in 1.6s var(--ease) both}
+#intro-dialog[open] .brand-loop{animation:brand-loop-in 2.4s var(--ease) both}
+#intro-dialog[open] .brand-dot{animation:brand-dot-in 2s var(--ease) both}
+#intro-dialog[open] .brand-satellite{animation:brand-orbit-in 4.4s var(--ease) both}
+#intro-dialog[open] .brand-glint{animation:brand-glint-in 3.6s var(--ease) both}
+#intro-dialog[open] .brand-orbit{animation:brand-track-in 2.8s var(--ease) both}
+@keyframes brand-arrive{from{opacity:0;transform:translateY(9px) scale(.92)}to{opacity:1;transform:none}}
+@keyframes brand-stem-in{0%{transform:translate(-12px,-14px) rotate(-22deg);opacity:0}40%{opacity:1}100%{transform:none;opacity:1}}
+@keyframes brand-loop-in{0%{transform:translate(39px,-9px) rotate(55deg) scale(.65);opacity:0}22%{opacity:1}65%{transform:translate(-2px,1px) rotate(-6deg) scale(1.03)}100%{transform:none;opacity:1}}
+@keyframes brand-dot-in{0%,18%{transform:translate(44px,-38px) scale(.2);opacity:0}45%{opacity:1}75%{transform:translate(-2px,1px) scale(1.14)}100%{transform:none;opacity:1}}
+@keyframes brand-orbit-in{0%{transform:rotate(-155deg);opacity:0}18%{opacity:1}85%{opacity:1}100%{transform:rotate(205deg);opacity:.65}}
+@keyframes brand-glint-in{0%,25%{opacity:0;transform:rotate(-60deg) scale(.25)}48%{opacity:1;transform:rotate(15deg) scale(1.1)}100%{opacity:.6;transform:rotate(45deg) scale(.8)}}
+@keyframes brand-track-in{0%{opacity:0;transform:scale(.7) rotate(-20deg)}100%{opacity:.6;transform:none}}
+@media(max-width:760px){.brand-motion{height:105px;margin-top:-10px;margin-bottom:16px;max-width:310px}#intro-dialog .brand-motion+.eyebrow{display:block}}
+@media(prefers-reduced-motion:reduce){#intro-dialog[open] .brand-motion *{animation:none!important}}

@@ -37,7 +37,18 @@ const dialog = document.querySelector('#intro-dialog');
 document.querySelectorAll('[data-open]').forEach(button => button.addEventListener('click', () => { closeMenu(); dialog.showModal(); }));
 document.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) { const bounds = dialog.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close(); } });
-document.querySelector('#explore-dialog').addEventListener('click', () => { dialog.close(); document.querySelector('#requirements').scrollIntoView({ behavior: reduceMotion.matches ? 'instant' : 'smooth' }); });
+const accountDialog = document.querySelector('#account-dialog');
+document.querySelector('#explore-dialog').addEventListener('click', () => { dialog.close(); accountDialog.showModal(); });
+document.querySelector('.account-close').addEventListener('click', () => accountDialog.close());
+accountDialog.addEventListener('click', event => { if (event.target === accountDialog) { const bounds = accountDialog.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) accountDialog.close(); } });
+document.querySelectorAll('[data-account-mode]').forEach(button => button.addEventListener('click', () => {
+  const signup = button.dataset.accountMode === 'signup';
+  document.querySelectorAll('[data-account-mode]').forEach(option => { const selected = option === button; option.classList.toggle('selected', selected); option.setAttribute('aria-pressed', String(selected)); });
+  document.querySelector('#account-heading').textContent = signup ? 'Your next chapter starts here.' : 'Good to see you again.';
+  document.querySelector('#account-copy').textContent = signup ? "When registration opens, you'll create your account with your university-issued student email." : "When account access opens, you'll return here to log in with your verified student email.";
+  document.querySelector('#account-status').textContent = signup ? "Sign-up is coming soon. This preview doesn't create an account or collect personal details." : "Login is coming soon. Account authentication isn't connected in this preview.";
+  document.querySelector('#account-availability').textContent = signup ? 'Sign-up coming soon' : 'Login coming soon';
+}));
 document.querySelector('.motion-toggle').addEventListener('click', event => { const paused = document.body.classList.toggle('motion-paused'); event.currentTarget.textContent = paused ? '▷' : 'Ⅱ'; const label = paused ? 'Play decorative motion' : 'Pause decorative motion'; event.currentTarget.title = label; event.currentTarget.setAttribute('aria-label', label); });
 
 // Keep the primary action reachable after the first screen, without covering

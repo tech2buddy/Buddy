@@ -3,7 +3,7 @@
 Research date: 25 October 2026. This is a working product brief, not a signed-off lending or tax opinion. Confirm the agreement classification, full current legal position and calculation methodology with a South African credit-law practitioner before offering credit. Statutory ceilings are not a recommendation to charge the maximum.
 
 ## Confirmed by the founder
-University students; loans up to R700; student-email sign-up; affordability and credit checks; ID, proof of registration, proof of residence and latest three months of bank statements; proposed debit-order collection aligned with allowance receipt. AI-assisted statement analysis is proposed, not implemented.
+University students; loans up to R700; student-email sign-up; affordability and credit checks; ID, proof of registration, proof of residence and latest three months of bank statements; one repayment on the next verified allowance date, collected through an authorised debit-order mandate. The founder confirmed NCR registration is still to be done. AI-assisted statement analysis is proposed, not implemented. Keep real applications and lending closed until the required registration and operational setup are complete.
 
 ## Marketing research and decisions
 Capitec separates eligibility, documents and costs, including advising customers to compare total repayment rather than just interest. Barko presents a short application journey. Revolut leads with a concise benefit and a clear next action. These are observed patterns, not evidence that their exact wording will improve Buddy Loans conversions.
@@ -51,14 +51,14 @@ Recommend DebiCheck via an approved collections provider/bank, subject to commer
 
 Show the creditor, exact collection amount, frequency, date and applicable tracking rules before authorisation. Distinguish the loan contract from the collection mandate. Store mandate references and status, not banking credentials. Payout must wait for the policy's required verification and authorisation states.
 
-“Repay on an agreed date aligned with your allowance” is clearer than “every month-end”: allowance dates vary. Decide whether this product is a single payment at the next verified allowance date or several monthly instalments. Never infer an unrestricted right to sweep an account or keep retrying after an allowance delay. Publish a missed-payment/contact process and control changes to dates/amounts.
+The founder confirmed a single payment on the next verified allowance date, not monthly instalments. Allowance dates vary, so confirm the date for each agreement. Set maximum permitted duration and a process for delayed allowances; do not infer an unrestricted right to sweep an account or keep retrying after an allowance delay. Publish a missed-payment/contact process and control changes to dates/amounts.
 
 Sources: [SARB](https://resbank.co.za/en/home/what-we-do/payments-and-settlements/oversight-supervision), [PASA](https://pasa.org.za/pasa-resources/pasa-debit-orders/).
 
 ## Launch decisions still required
-- NCR registration and the actual lending entity: obtain and verify the applicable registration before lending; no invented registration number or badge. The NCR states the registration threshold became zero in 2016. [NCR](https://www.ncr.org.za/documents/Zero%20Threshold.pdf)
+- NCR registration is pending. Confirm the actual lending entity; obtain and verify the applicable registration before lending. No invented registration number or badge. The NCR states the registration threshold became zero in 2016. [NCR](https://www.ncr.org.za/documents/Zero%20Threshold.pdf)
 - Approve an adults-only launch policy (recommended 18+), geographical/identity eligibility, accepted institutions and accepted allowance/income sources. The homepage does not yet assert that all students qualify.
-- Confirm whether there is one repayment or an instalment schedule and define term limits.
+- One repayment is confirmed. Define term limits, how the next allowance date is verified, and how holiday/term breaks and allowance delays are handled.
 - Select actual interest/fees below or at reviewed ceilings; approve VAT treatment and dated calculation tests.
 - Contract bureau, bank-account verification, statement processing and collections providers; verify reporting obligations and provider agreements.
 - Approve privacy/retention/access controls, incident process, human review and complaint routes. Before using a third-party AI processor, check retention/training controls, operator agreement, hosting and any cross-border implications.

@@ -14,7 +14,7 @@
 #account-dialog .account-field{display:grid;gap:8px}
 #account-dialog .account-field-heading{display:flex;align-items:center;justify-content:space-between}
 #account-dialog .account-field label{font-size:12px;font-weight:800;color:var(--navy)}
-#account-dialog .account-field input{width:100%;min-height:51px;border:1px solid #dfe3ec;border-radius:13px;background:#fff;padding:0 15px;color:var(--navy);font:600 14px Manrope,system-ui,sans-serif;outline:none;transition:border-color .2s,box-shadow .2s}
+#account-dialog .account-field input{width:100%;min-height:51px;border:1px solid #dfe3ec;border-radius:13px;background:#fff;padding:0 15px;color:var(--navy);font:600 16px Manrope,system-ui,sans-serif;outline:none;transition:border-color .2s,box-shadow .2s}
 #account-dialog .account-field input::placeholder{font-weight:400;color:#9ba4b6}
 #account-dialog .account-field input:focus{border-color:var(--coral);box-shadow:0 0 0 3px #ff294816}
 #account-dialog .account-field small{font-size:10px;line-height:1.45;color:#758098}
@@ -44,7 +44,7 @@
   #account-dialog .account-options button{min-height:41px;font-size:12px}
   #account-dialog #account-form{gap:14px}
   #account-dialog .account-field{gap:6px}
-  #account-dialog .account-field input{min-height:48px;font-size:13px}
+  #account-dialog .account-field input{min-height:52px;font-size:16px}
   #account-dialog .account-field small{font-size:10px}
   #account-dialog .account-submit{min-height:52px;margin-top:2px}
   #account-dialog .account-preview-note{font-size:11px;line-height:1.45;margin-top:12px}

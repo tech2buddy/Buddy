@@ -1,0 +1,52 @@
+#account-dialog{max-width:480px;max-height:min(92dvh,900px);padding:30px 34px 29px;scrollbar-width:none}
+#account-dialog::-webkit-scrollbar{display:none}
+#account-dialog .account-top{display:flex;align-items:flex-start;justify-content:space-between;min-height:70px}
+#account-dialog .account-brand-mark{width:158px;height:69px;margin:-13px 0 0 -13px;flex:none}
+#account-dialog .account-preview-chip{margin:11px 46px 0 0;border:1px solid #e9dce4;border-radius:50px;padding:7px 10px;color:#b74c57;background:#fff4f2;font-size:8px;font-weight:800;letter-spacing:.13em}
+#account-dialog .account-eyebrow{display:block;margin-top:15px;color:#77829a;font-size:8px;letter-spacing:.17em}
+#account-dialog h2{font-size:43px;line-height:1.08;letter-spacing:-.065em;margin:13px 0 8px;font-weight:700}
+#account-dialog h2 span{background:var(--brand-gradient);background-clip:text;-webkit-background-clip:text;color:transparent}
+#account-dialog .account-lead{font-size:13px;line-height:1.65;margin:0;color:var(--muted)}
+#account-dialog .account-options{margin:23px 0 22px;padding:4px}
+#account-dialog .account-options button{min-height:42px;font-family:inherit;cursor:pointer}
+#account-dialog .account-options button:focus-visible,#account-dialog input:focus-visible,#account-dialog .account-show-password:focus-visible,#account-dialog .account-back:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+#account-dialog #account-form{display:grid;gap:17px}
+#account-dialog .account-field{display:grid;gap:8px}
+#account-dialog .account-field-heading{display:flex;align-items:center;justify-content:space-between}
+#account-dialog .account-field label{font-size:12px;font-weight:800;color:var(--navy)}
+#account-dialog .account-field input{width:100%;min-height:51px;border:1px solid #dfe3ec;border-radius:13px;background:#fff;padding:0 15px;color:var(--navy);font:600 14px Manrope,system-ui,sans-serif;outline:none;transition:border-color .2s,box-shadow .2s}
+#account-dialog .account-field input::placeholder{font-weight:400;color:#9ba4b6}
+#account-dialog .account-field input:focus{border-color:var(--coral);box-shadow:0 0 0 3px #ff294816}
+#account-dialog .account-field small{font-size:10px;line-height:1.45;color:#758098}
+#account-dialog .account-show-password{border:0;background:transparent;color:#b22743;font:700 11px Manrope,system-ui,sans-serif;padding:5px;cursor:pointer}
+#account-dialog .account-form-error{margin:-3px 0 0;font-size:11px;line-height:1.5;color:#b8233d}
+#account-dialog .account-submit{display:flex;justify-content:space-between;align-items:center;margin-top:2px;min-height:54px;border-radius:14px;font-size:13px;padding:0 19px}
+#account-dialog .account-submit span:last-child{font-size:19px;font-weight:400}
+#account-dialog .account-preview-note{border-left:2px solid var(--coral);padding:1px 0 1px 9px;margin:14px 0 0;font-size:11px;line-height:1.5;color:#59677f}
+#account-dialog .account-next{border:1px solid #e4e8ef;border-radius:20px;background:linear-gradient(145deg,#fff,#fff7f6);padding:22px;min-height:245px}
+#account-dialog .account-next-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#ff294817;color:var(--coral);font-size:22px;margin-bottom:22px}
+#account-dialog .account-next .eyebrow{font-size:8px;color:#718098}
+#account-dialog .account-next h3{font-size:24px;letter-spacing:-.05em;line-height:1.16;margin:12px 0}
+#account-dialog .account-next p{font-size:12px;line-height:1.7;color:var(--muted);margin:0}
+#account-dialog .account-back{border:0;background:transparent;padding:16px 0 0;color:var(--navy);font:700 11px Manrope,system-ui,sans-serif;cursor:pointer}
+#account-dialog [hidden]{display:none!important}
+@media(max-width:760px){
+  dialog#account-dialog{padding:12px 24px calc(22px + env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 20px - env(safe-area-inset-top,0px));border-radius:28px 28px 0 0}
+  #account-dialog .sheet-handle{margin-bottom:15px}
+  #account-dialog .account-top{min-height:52px}
+  #account-dialog .account-brand-mark{width:123px;height:57px;margin:-12px 0 0 -10px}
+  #account-dialog .account-preview-chip{margin:4px 43px 0 0;font-size:7px;padding:6px 9px}
+  #account-dialog .dialog-close{top:26px;right:20px;width:41px;height:41px;font-size:22px}
+  #account-dialog .account-eyebrow{margin-top:8px}
+  #account-dialog h2{font-size:clamp(32px,9.3vw,40px);margin:10px 0 6px}
+  #account-dialog .account-lead{font-size:12px;line-height:1.55}
+  #account-dialog .account-options{margin:18px 0;padding:4px}
+  #account-dialog .account-options button{min-height:41px;font-size:12px}
+  #account-dialog #account-form{gap:14px}
+  #account-dialog .account-field{gap:6px}
+  #account-dialog .account-field input{min-height:48px;font-size:13px}
+  #account-dialog .account-field small{font-size:10px}
+  #account-dialog .account-submit{min-height:52px;margin-top:2px}
+  #account-dialog .account-preview-note{font-size:11px;line-height:1.45;margin-top:12px}
+}
+@media(max-width:359px){dialog#account-dialog{padding-left:21px;padding-right:21px}#account-dialog .account-brand-mark{width:112px}#account-dialog h2{font-size:33px}}

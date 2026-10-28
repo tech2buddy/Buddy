@@ -60,11 +60,11 @@ body:has(dialog[open]){overflow:hidden}
   .scenario.active{background:#f8f9fc;color:var(--navy);box-shadow:0 3px 8px #0002}
   .experience-visual{min-height:395px;border-radius:24px;background:radial-gradient(ellipse at 50% 40%,#27364d,#152034 85%)}
   .visual-corner{font-size:7px;top:18px;left:20px;letter-spacing:1.3px}
-  .demo-card{width:244px;border-radius:22px;padding:20px;transform:rotate(-3deg);margin:37px 0 40px;box-shadow:0 18px 35px #0003}
-  .experience-visual:hover .demo-card{transform:rotate(-3deg)}
-  .demo-brand{font-size:16px}.demo-art{height:98px;margin-top:5px}
+  .product-card{width:244px;border-radius:22px;padding:20px;transform:rotate(-3deg);margin:37px 0 40px;box-shadow:0 18px 35px #0003}
+  .experience-visual:hover .product-card{transform:rotate(-3deg)}
+  .product-brand{font-size:16px}.product-art{height:98px;margin-top:5px}
   .tile{width:62px;height:74px;left:77px;top:10px;border-radius:16px}.tile-front svg{width:44px}.tile-circle{width:125px;height:38px;left:46px;top:50px}
-  .demo-kicker{font-size:9px;letter-spacing:1.1px}.demo-content h3{font-size:29px;margin:10px 0;letter-spacing:-1.4px}.demo-content p{font-size:12px;line-height:1.6;min-height:39px;margin-bottom:16px}.demo-bottom{padding-top:12px;font-size:10px}
+  .scenario-kicker{font-size:9px;letter-spacing:1.1px}.scenario-content h3{font-size:29px;margin:10px 0;letter-spacing:-1.4px}.scenario-content p{font-size:12px;line-height:1.6;min-height:39px;margin-bottom:16px}.product-bottom{padding-top:12px;font-size:10px}
   .visual-bottom{bottom:12px;font-size:9px;left:20px;right:20px}
   .perspective{padding:57px 0}
   .section-heading h2{font-size:36px;line-height:1.13;letter-spacing:-.05em;margin:21px 0 16px}
@@ -112,8 +112,8 @@ body:has(dialog[open]){overflow:hidden}
   .button:hover{transform:none}
   .button:active{transform:scale(.97)}
 }
-@media(max-width:359px){:root{--mobile-edge:20px}.hero{padding-top:25px}.hero h1{font-size:43px}.hero-description{font-size:14px}.hero-actions{gap:4px}.hero-actions>.button{font-size:12px;padding-inline:12px}.text-button{font-size:11px;gap:6px}.hero-art{height:245px}.ribbon-art{height:300px;top:-32px}.label-top{font-size:7px;padding:8px}.glass-note{width:195px;padding:12px}.glass-note strong{font-size:14px}.section-copy h2{font-size:36px}.scenario>span:nth-child(2){font-size:10px}.experience-visual{min-height:375px}.demo-card{width:225px}.faq-heading h2{font-size:31px}.faq-flower{font-size:35px}.mobile-dock .button{padding-inline:15px;gap:10px}.mobile-menu a{font-size:23px}}
-@media(min-width:520px) and (max-width:760px){.hero-art{height:300px}.ribbon-art{height:360px}.hero h1{font-size:64px}.hero-copy{max-width:480px;margin:auto}.experience-grid{max-width:500px}.experience-visual{min-height:420px}.demo-card{width:265px}.mobile-dock{padding-inline:30px}.mobile-menu,dialog#intro-dialog{max-width:520px!important;margin-inline:auto!important}}
+@media(max-width:359px){:root{--mobile-edge:20px}.hero{padding-top:25px}.hero h1{font-size:43px}.hero-description{font-size:14px}.hero-actions{gap:4px}.hero-actions>.button{font-size:12px;padding-inline:12px}.text-button{font-size:11px;gap:6px}.hero-art{height:245px}.ribbon-art{height:300px;top:-32px}.label-top{font-size:7px;padding:8px}.glass-note{width:195px;padding:12px}.glass-note strong{font-size:14px}.section-copy h2{font-size:36px}.scenario>span:nth-child(2){font-size:10px}.experience-visual{min-height:375px}.product-card{width:225px}.faq-heading h2{font-size:31px}.faq-flower{font-size:35px}.mobile-dock .button{padding-inline:15px;gap:10px}.mobile-menu a{font-size:23px}}
+@media(min-width:520px) and (max-width:760px){.hero-art{height:300px}.ribbon-art{height:360px}.hero h1{font-size:64px}.hero-copy{max-width:480px;margin:auto}.experience-grid{max-width:500px}.experience-visual{min-height:420px}.product-card{width:265px}.mobile-dock{padding-inline:30px}.mobile-menu,dialog#intro-dialog{max-width:520px!important;margin-inline:auto!important}}
 @media(max-width:359px){.hero h1{font-size:39px}}
 @keyframes sheet-in{from{transform:translateY(32px);opacity:.5}to{transform:translateY(0);opacity:1}}
 @keyframes dock-in{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}

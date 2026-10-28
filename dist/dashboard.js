@@ -1,74 +1,125 @@
-const views = new Set(['overview', 'plan', 'prepare', 'activity']);
-const viewNames = { overview: 'Home', plan: 'Application preview', prepare: 'Documents', activity: 'Activity' };
-let pendingStep = null;
+const sections = new Set(['overview', 'application', 'prepare', 'activity']);
+const sectionNames = { overview: 'Home', application: 'Application', prepare: 'Documents', activity: 'Activity' };
+const steps = ['Choose an amount', 'Get your documents ready', 'Understand the checks', 'Review before deciding'];
+const amountStorageKey = 'buddy.application.amount';
+let activeSection = 'overview';
+let activeStep = 1;
 
-function showView() {
-  const requested = window.location.hash.slice(1);
-  const current = views.has(requested) ? requested : 'overview';
-  document.querySelectorAll('[data-view]').forEach(section => { section.hidden = section.dataset.view !== current; });
+function readRoute() {
+  const [section, step] = window.location.hash.slice(1).split('/');
+  return {
+    section: sections.has(section) ? section : 'overview',
+    step: section === 'application' ? Math.min(4, Math.max(1, Number(step) || 1)) : 1
+  };
+}
+
+function renderRoute({ focus = false } = {}) {
+  const route = readRoute();
+  activeSection = route.section;
+  document.querySelectorAll('[data-view]').forEach(panel => { panel.hidden = panel.dataset.view !== activeSection; });
   document.querySelectorAll('[data-view-link]').forEach(link => {
-    if (link.dataset.viewLink === current) link.setAttribute('aria-current', 'page');
+    if (link.dataset.viewLink === activeSection) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
-  document.querySelector('#current-section').textContent = viewNames[current];
-  document.title = `${viewNames[current]} — Buddy Loans preview`;
+  document.querySelector('#current-section').textContent = sectionNames[activeSection];
+  document.title = `${sectionNames[activeSection]} — Buddy Loans`;
+  if (activeSection === 'application') renderStep(route.step);
+  if (focus) document.querySelector('#dashboard-main').focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => {
-  const destination = button.dataset.go;
-  if (!views.has(destination)) return;
-  if (window.location.hash === `#${destination}`) showView();
-  else window.location.hash = destination;
-  if (destination === 'plan') pendingStep = button.dataset.stepGo ? Number(button.dataset.stepGo) : 1;
-}));
+function navigate(section, step = 1) {
+  if (!sections.has(section)) return;
+  const hash = section === 'application' ? `#application/${step}` : `#${section}`;
+  if (window.location.hash === hash) renderRoute({ focus: true });
+  else window.location.hash = hash;
+}
 
-window.addEventListener('hashchange', showView);
+document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => {
+  navigate(button.dataset.go, Number(button.dataset.stepGo) || 1);
+}));
+document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => {
+  event.preventDefault();
+  navigate(link.dataset.viewLink, 1);
+}));
+window.addEventListener('hashchange', () => renderRoute({ focus: true }));
 
 const amountRange = document.querySelector('#amount-range');
+const amountOutput = document.querySelector('#amount-output');
+const reviewAmount = document.querySelector('#review-amount');
 function updateAmount() {
   const amount = Number(amountRange.value);
-  document.querySelector('#amount-output').value = String(amount);
-  document.querySelector('#review-amount').textContent = `R${amount}`;
+  amountOutput.value = String(amount);
+  reviewAmount.textContent = `R${amount}`;
+  sessionStorage.setItem(amountStorageKey, String(amount));
   const percentage = ((amount - Number(amountRange.min)) / (Number(amountRange.max) - Number(amountRange.min))) * 100;
   amountRange.style.setProperty('--range-fill', `${percentage}%`);
-  document.querySelectorAll('[data-amount]').forEach(button => button.classList.toggle('active', Number(button.dataset.amount) === amount));
+  document.querySelectorAll('[data-amount]').forEach(button => {
+    const selected = Number(button.dataset.amount) === amount;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
 }
+const savedAmount = Number(sessionStorage.getItem(amountStorageKey));
+if (savedAmount >= 100 && savedAmount <= 700) amountRange.value = String(savedAmount);
 amountRange.addEventListener('input', updateAmount);
-document.querySelectorAll('[data-amount]').forEach(button => button.addEventListener('click', () => { amountRange.value = button.dataset.amount; updateAmount(); }));
+document.querySelectorAll('[data-amount]').forEach(button => button.addEventListener('click', () => {
+  amountRange.value = button.dataset.amount;
+  updateAmount();
+}));
 updateAmount();
 
-const stepNames = ['Choose an amount', 'Get your documents ready', 'Understand the checks', 'Review before deciding'];
-let activeStep = 1;
-function setStep(next) {
-  activeStep = Math.min(4, Math.max(1, next));
-  document.querySelectorAll('[data-application-step]').forEach(panel => { panel.hidden = Number(panel.dataset.applicationStep) !== activeStep; });
-  document.querySelector('#step-label').textContent = stepNames[activeStep - 1];
+function renderStep(step) {
+  activeStep = step;
+  const nextButton = document.querySelector('#next-step');
+  nextButton.dataset.finished = 'false';
+  document.querySelector('#application-status').classList.remove('completion-note');
+  document.querySelector('#application-status').textContent = 'Applications open after Buddy completes NCR credit-provider registration and launches secure account services.';
+  document.querySelectorAll('[data-application-step]').forEach(panel => {
+    panel.hidden = Number(panel.dataset.applicationStep) !== activeStep;
+  });
+  document.querySelector('#step-label').textContent = steps[activeStep - 1];
   document.querySelector('#step-count').textContent = `Step ${activeStep} of 4`;
   document.querySelector('#step-index').textContent = `STEP 0${activeStep} / 04`;
   document.querySelector('#progress-fill').style.width = `${activeStep * 25}%`;
-  document.querySelectorAll('.step-dots i').forEach((dot, index) => {
+  document.querySelectorAll('.step-dots button').forEach((dot, index) => {
     dot.classList.toggle('active', index + 1 === activeStep);
     dot.classList.toggle('complete', index + 1 < activeStep);
+    if (index + 1 === activeStep) dot.setAttribute('aria-current', 'step');
+    else dot.removeAttribute('aria-current');
   });
   document.querySelector('#back-step').disabled = activeStep === 1;
-  document.querySelector('#next-step').innerHTML = activeStep === 4 ? 'Finish preview <svg><use href="#i-check"/></svg>' : 'Continue <svg><use href="#i-arrow"/></svg>';
-  document.querySelector('#application-legal-note').textContent = activeStep === 4
-    ? 'This is where a real application would pause so you can review a formal quote. The Buddy Loans application process is not open yet.'
-    : 'Buddy Loans is preparing for launch. Applications are not open and this preview does not assess eligibility.';
-  if (window.location.hash === '#plan') window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelector('#back-step').setAttribute('aria-label', activeStep === 1 ? 'Back to student space' : `Back to step ${activeStep - 1}`);
+  nextButton.innerHTML = [
+    'Continue to documents',
+    'Continue to affordability',
+    'Review your application',
+    'Finish'
+  ][activeStep - 1] + ' <svg><use href="#i-arrow"/></svg>';
+  document.querySelector('#application-status').textContent = activeStep === 4
+    ? 'Account registration and applications open after Buddy completes NCR credit-provider registration and launches secure account services.'
+    : 'Applications open after Buddy completes NCR credit-provider registration and launches secure account services.';
 }
-document.querySelector('#back-step').addEventListener('click', () => setStep(activeStep - 1));
+
+document.querySelector('#back-step').addEventListener('click', () => {
+  if (activeStep > 1) navigate('application', activeStep - 1);
+  else navigate('overview');
+});
 document.querySelector('#next-step').addEventListener('click', () => {
-  if (activeStep < 4) setStep(activeStep + 1);
-  else {
-    document.querySelector('#application-legal-note').textContent = 'You’ve reached the end of the demo. No account details or loan application were submitted or saved.';
-    document.querySelector('#application-legal-note').classList.add('completion-note');
+  const next = document.querySelector('#next-step');
+  const status = document.querySelector('#application-status');
+  if (next.dataset.finished === 'true') {
+    navigate('overview');
+  } else if (activeStep < 4) {
+    navigate('application', activeStep + 1);
+  } else {
+    status.textContent = 'You’ve reached the final step. Account registration and loan applications are not open yet, so nothing has been submitted.';
+    status.classList.add('completion-note');
+    next.textContent = 'Return to student space';
+    next.dataset.finished = 'true';
   }
 });
-document.querySelectorAll('[data-step-go]').forEach(button => button.addEventListener('click', () => setStep(Number(button.dataset.stepGo))));
-window.addEventListener('hashchange', () => { if (window.location.hash === '#plan') { setStep(pendingStep ?? 1); pendingStep = null; } });
-setStep(1);
-showView();
-
-
+document.querySelectorAll('.step-dots button').forEach(dot => dot.addEventListener('click', () => {
+  navigate('application', Number(dot.dataset.step));
+}));
+renderRoute();

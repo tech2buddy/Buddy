@@ -1,6 +1,7 @@
 const sections = new Set(['overview', 'application', 'prepare', 'activity']);
 const sectionNames = { overview: 'Home', application: 'Application', prepare: 'Documents', activity: 'Activity' };
 const steps = ['Choose an amount', 'Get your documents ready', 'Understand the checks', 'Review before deciding'];
+const headings = [['Choose an ', 'amount.'], ['Get your ', 'documents ready.'], ['Understand ', 'the checks.'], ['Review ', 'before deciding.']];
 const amountStorageKey = 'buddy.application.amount';
 let activeSection = 'overview';
 let activeStep = 1;
@@ -106,7 +107,8 @@ window.BuddyLoansDashboard = Object.freeze({
     currentLoanHistory = deriveLoanHistory(account);
     updateEstimate(Number(amountRange.value));
   }
-});function updateAmount() {
+});
+function updateAmount() {
   const amount = Number(amountRange.value);
   amountOutput.value = String(amount);
   updateEstimate(amount);
@@ -114,19 +116,10 @@ window.BuddyLoansDashboard = Object.freeze({
   sessionStorage.setItem(amountStorageKey, String(amount));
   const percentage = ((amount - Number(amountRange.min)) / (Number(amountRange.max) - Number(amountRange.min))) * 100;
   amountRange.style.setProperty('--range-fill', `${percentage}%`);
-  document.querySelectorAll('[data-amount]').forEach(button => {
-    const selected = Number(button.dataset.amount) === amount;
-    button.classList.toggle('active', selected);
-    button.setAttribute('aria-pressed', String(selected));
-  });
 }
 const savedAmount = Number(sessionStorage.getItem(amountStorageKey));
 if (savedAmount >= 100 && savedAmount <= 700) amountRange.value = String(Math.round(savedAmount / 100) * 100);
 amountRange.addEventListener('input', updateAmount);
-document.querySelectorAll('[data-amount]').forEach(button => button.addEventListener('click', () => {
-  amountRange.value = button.dataset.amount;
-  updateAmount();
-}));
 updateAmount();
 function renderStep(step) {
   activeStep = step;
@@ -139,14 +132,18 @@ function renderStep(step) {
   });
   document.querySelector('#step-label').textContent = steps[activeStep - 1];
   document.querySelector('#step-count').textContent = `Step ${activeStep} of 4`;
-  document.querySelector('#step-index').textContent = `STEP 0${activeStep} / 04`;
+  document.querySelector('#step-index').textContent = `0${activeStep} / 04`;
+  document.querySelector('#step-description').textContent = ['Choose an amount and see one clear repayment estimate.', 'Get your required student and income documents ready.', 'See how affordability and verification checks work.', 'Review the full amount and due date before deciding.'][activeStep - 1];
+  const heading = document.querySelector('#plan-title');
+  heading.replaceChildren(document.createTextNode(headings[activeStep - 1][0]));
+  const accent = document.createElement('em');
+  accent.textContent = headings[activeStep - 1][1];
+  heading.append(accent);
+  const progressTrack = document.querySelector('.application-intro .progress-track');
+  progressTrack.setAttribute('aria-valuenow', String(activeStep));
+  progressTrack.setAttribute('aria-valuetext', `Step ${activeStep} of 4`);
   document.querySelector('#progress-fill').style.width = `${activeStep * 25}%`;
-  document.querySelectorAll('.step-dots button').forEach((dot, index) => {
-    dot.classList.toggle('active', index + 1 === activeStep);
-    dot.classList.toggle('complete', index + 1 < activeStep);
-    if (index + 1 === activeStep) dot.setAttribute('aria-current', 'step');
-    else dot.removeAttribute('aria-current');
-  });
+
   document.querySelector('#back-step').disabled = activeStep === 1;
   document.querySelector('#back-step').setAttribute('aria-label', activeStep === 1 ? 'Back to student space' : `Back to step ${activeStep - 1}`);
   nextButton.innerHTML = [
@@ -178,7 +175,5 @@ document.querySelector('#next-step').addEventListener('click', () => {
     next.dataset.finished = 'true';
   }
 });
-document.querySelectorAll('.step-dots button').forEach(dot => dot.addEventListener('click', () => {
-  navigate('application', Number(dot.dataset.step));
-}));
+
 renderRoute();

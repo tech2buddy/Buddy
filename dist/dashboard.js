@@ -48,29 +48,65 @@ const amountRange = document.querySelector('#amount-range');
 const amountOutput = document.querySelector('#amount-output');
 const reviewAmount = document.querySelector('#review-amount');
 function formatRand(value) { return `R${Math.round(value).toLocaleString('en-ZA')}`; }
-function updateEstimate(amount) {
-  const initiation = Math.round(amount * 0.15);
-  const firstInterest = Math.round(amount * 0.05);
-  const repeatInterest = Math.round(amount * 0.03);
-  const firstService = Math.min(60, Math.round(amount * 0.20));
-  const repeatService = Math.min(60, Math.round(amount * 0.22));
-  const values = {
-    '#quote-principal': amount,
-    '#first-interest': firstInterest,
-    '#repeat-interest': repeatInterest,
-    '#first-initiation': initiation,
-    '#repeat-initiation': initiation,
-    '#first-service': firstService,
-    '#repeat-service': repeatService,
-    '#first-total': amount + firstInterest + initiation + firstService,
-    '#repeat-total': amount + repeatInterest + initiation + repeatService
-  };
-  Object.entries(values).forEach(([selector, value]) => {
-    const element = document.querySelector(selector);
-    if (element) element.textContent = formatRand(value);
-  });
+let currentLoanHistory = null;
+function southAfricanYear(value = new Date()) {
+  return new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', year: 'numeric' }).format(value);
 }
-function updateAmount() {
+function deriveLoanHistory(account) {
+  if (!account || account.authenticated !== true || !Array.isArray(account.loans)) return null;
+  const year = southAfricanYear();
+  const disbursedThisYear = account.loans.some(loan => {
+    if (loan?.status !== 'disbursed' || !loan.disbursedAt) return false;
+    const date = new Date(loan.disbursedAt);
+    return Number.isFinite(date.getTime()) && date.getTime() <= Date.now() && southAfricanYear(date) === year;
+  });
+  return disbursedThisYear ? 'repeat' : 'first';
+}
+function calculateEstimate(amount, repeat) {
+  const interestRate = repeat ? 0.03 : 0.05;
+  const serviceRate = repeat ? 0.22 : 0.20;
+  const interest = Math.round(amount * interestRate);
+  const initiation = Math.round(amount * 0.15);
+  const service = Math.min(60, Math.round(amount * serviceRate));
+  return { interestRate, interest, initiation, service, total: amount + interest + initiation + service };
+}
+function updateEstimate(amount) {
+  const label = document.querySelector('#loan-history-label');
+  const note = document.querySelector('#pricing-note');
+  const breakdown = document.querySelector('#estimate-breakdown');
+  const legal = document.querySelector('#pricing-legal');
+  const total = document.querySelector('#estimate-total');
+  if (!currentLoanHistory) {
+    label.textContent = 'ACCOUNT CHECK';
+    document.querySelector('#estimate-caption').textContent = 'Your estimate appears after sign-in';
+    total.textContent = '—';
+    breakdown.hidden = true;
+    legal.hidden = true;
+    note.hidden = false;
+    note.textContent = 'Once you are signed in, Buddy checks your loan history and shows one rate: first-loan pricing if no loan was disbursed this calendar year, or repeat-loan pricing if one was.';
+    return;
+  }
+  const repeat = currentLoanHistory === 'repeat';
+  const { interestRate, interest, initiation, service, total: repaymentTotal } = calculateEstimate(amount, repeat);
+  label.textContent = repeat ? 'REPEAT LOAN THIS YEAR' : 'FIRST LOAN THIS YEAR';
+  document.querySelector('#estimate-caption').textContent = 'Total due if approved';
+  document.querySelector('#quote-principal').textContent = formatRand(amount);
+  document.querySelector('#quote-interest-label').textContent = `Interest · ${Math.round(interestRate * 100)}% monthly`;
+  document.querySelector('#quote-interest').textContent = formatRand(interest);
+  document.querySelector('#quote-initiation').textContent = formatRand(initiation);
+  document.querySelector('#quote-service').textContent = formatRand(service);
+  total.textContent = formatRand(repaymentTotal);
+  document.querySelector('#quote-total').textContent = total.textContent;
+  breakdown.hidden = false;
+  legal.hidden = false;
+  note.hidden = true;
+}
+window.BuddyLoansDashboard = Object.freeze({
+  setAccountContext(account) {
+    currentLoanHistory = deriveLoanHistory(account);
+    updateEstimate(Number(amountRange.value));
+  }
+});function updateAmount() {
   const amount = Number(amountRange.value);
   amountOutput.value = String(amount);
   updateEstimate(amount);

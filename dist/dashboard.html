@@ -4,9 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#091222">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Buddy Loans">
   <meta name="description" content="Buddy Loans student space: explore your application steps, prepare your documents and understand what to expect.">
   <title>Your student space — Buddy Loans</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="buddy-app-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,6 +20,7 @@
   <link rel="stylesheet" href="dashboard-responsive.css?v=buddy-dashboard-5">
   <link rel="stylesheet" href="dashboard-account.css?v=buddy-account-3">
   <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
+  <link rel="stylesheet" href="dashboard-mobile.css?v=immersive-mobile-1">
   <script src="dashboard.js?v=buddy-dashboard-5" defer></script>
 </head>
 <body>
@@ -50,7 +56,7 @@
 
     <div class="main-shell">
       <header class="topbar">
-        <a class="mobile-brand" href="index.html" aria-label="Buddy Loans home"><span>b.</span><strong>buddy<span>loans</span></strong></a>
+        <a class="mobile-brand" href="index.html" aria-label="Buddy Loans home"><span class="mobile-brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><defs><linearGradient id="mobile-brand-paint" x1="10" y1="9" x2="36" y2="39" gradientUnits="userSpaceOnUse"><stop stop-color="#ffbd91"/><stop offset=".42" stop-color="#ff813b"/><stop offset=".74" stop-color="#ff2948"/><stop offset="1" stop-color="#d81948"/></linearGradient></defs><ellipse class="mobile-mark-orbit" cx="24" cy="24" rx="19" ry="11" fill="none" stroke="#ff815b" stroke-opacity=".65" stroke-width=".8"/><path d="M14 11v26h10.2c12.2 0 12.2-17.6 0-17.6H20" fill="none" stroke="url(#mobile-brand-paint)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/><g class="mobile-mark-satellite"><circle cx="42" cy="24" r="2.5" fill="#ff5263"/></g></svg></span><strong>buddy<span>loans</span></strong></a>
         <div class="topbar-context"><span class="topbar-eyebrow">BUDDY LOANS / STUDENT SPACE</span><span class="topbar-title" id="current-section">Home</span></div>
         <div class="topbar-right"><span class="topbar-tag"><span></span> Student space</span><span class="avatar" aria-hidden="true">b.</span></div>
       </header>

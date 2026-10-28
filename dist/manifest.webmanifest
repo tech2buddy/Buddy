@@ -1,0 +1,16 @@
+{
+  "id": ".",
+  "name": "Buddy Loans",
+  "short_name": "Buddy Loans",
+  "description": "Your Buddy Loans student account.",
+  "start_url": "./dashboard.html#overview",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f8fb",
+  "theme_color": "#091222",
+  "icons": [
+    { "src": "buddy-app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "buddy-app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

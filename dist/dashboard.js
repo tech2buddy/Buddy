@@ -2,6 +2,7 @@ const sections = new Set(['overview', 'application', 'prepare', 'activity']);
 const sectionNames = { overview: 'Home', application: 'Application', prepare: 'Documents', activity: 'Activity' };
 const steps = ['Choose an amount', 'Get your documents ready', 'Understand the checks', 'Review before deciding'];
 const amountStorageKey = 'buddy.application.amount';
+let loanHistory = 'first';
 let activeSection = 'overview';
 let activeStep = 1;
 
@@ -50,6 +51,7 @@ const reviewAmount = document.querySelector('#review-amount');
 function updateAmount() {
   const amount = Number(amountRange.value);
   amountOutput.value = String(amount);
+  updateEstimate(amount);
   reviewAmount.textContent = `R${amount}`;
   sessionStorage.setItem(amountStorageKey, String(amount));
   const percentage = ((amount - Number(amountRange.min)) / (Number(amountRange.max) - Number(amountRange.min))) * 100;
@@ -61,14 +63,34 @@ function updateAmount() {
   });
 }
 const savedAmount = Number(sessionStorage.getItem(amountStorageKey));
-if (savedAmount >= 100 && savedAmount <= 700) amountRange.value = String(savedAmount);
+if (savedAmount >= 100 && savedAmount <= 700) amountRange.value = String(Math.round(savedAmount / 100) * 100);
 amountRange.addEventListener('input', updateAmount);
 document.querySelectorAll('[data-amount]').forEach(button => button.addEventListener('click', () => {
   amountRange.value = button.dataset.amount;
   updateAmount();
 }));
 updateAmount();
+document.querySelectorAll('[data-loan-history]').forEach(button => button.addEventListener('click', () => {
+  loanHistory = button.dataset.loanHistory;
+  document.querySelectorAll('[data-loan-history]').forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+  updateEstimate(Number(amountRange.value));
+}));
 
+function updateEstimate(amount) {
+  const repeat = loanHistory === 'repeat';
+  const interestRate = repeat ? 0.03 : 0.05;
+  const serviceRate = repeat ? 0.22 : 0.20;
+  const interest = Math.round(amount * interestRate);
+  const initiation = Math.round(amount * 0.15);
+  const service = Math.min(60, Math.round(amount * serviceRate));
+  const formatRand = value => `R${Math.round(value).toLocaleString('en-ZA')}`;
+  document.querySelector('#quote-principal').textContent = formatRand(amount);
+  document.querySelector('#quote-interest-label').textContent = `Interest · ${Math.round(interestRate * 100)}% monthly`;
+  document.querySelector('#quote-interest').textContent = formatRand(interest);
+  document.querySelector('#quote-initiation').textContent = formatRand(initiation);
+  document.querySelector('#quote-service').textContent = formatRand(service);
+  document.querySelector('#estimate-total').textContent = formatRand(amount + interest + initiation + service);
+}
 function renderStep(step) {
   activeStep = step;
   const nextButton = document.querySelector('#next-step');

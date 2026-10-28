@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="dashboard-sections.css?v=buddy-dashboard-5">
   <link rel="stylesheet" href="dashboard-responsive.css?v=buddy-dashboard-5">
   <link rel="stylesheet" href="dashboard-account.css?v=buddy-account-3">
+  <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
   <script src="dashboard.js?v=buddy-dashboard-5" defer></script>
 </head>
 <body>
@@ -56,11 +57,20 @@
 
       <main id="dashboard-main" tabindex="-1">
         <section class="view" id="overview" data-view="overview" aria-labelledby="overview-title">
-          <div class="page-intro account-intro"><div><span class="section-kicker"><span class="signal-dot"></span> YOUR BUDDY STUDENT SPACE</span><h1 id="overview-title">Your student space.<br><em>Your next step.</em></h1><p>Start here to understand the application process and get your documents ready.</p></div><span class="page-index">STUDENT SPACE</span></div>
-          <div class="welcome-grid"><article class="welcome-card"><div class="welcome-content"><span class="welcome-label"><span></span> YOUR NEXT STEP · GET READY TO APPLY</span><h2>Ready to start<br>your application?</h2><p>Choose an amount, prepare your documents and understand the checks before you apply.</p><button class="feature-button" type="button" data-go="application">Prepare to apply <svg><use href="#i-arrow"/></svg></button><small>Four steps · Continue whenever you’re ready</small></div><div class="welcome-orb" aria-hidden="true"><span></span><i></i></div><span class="feature-watermark" aria-hidden="true">BUDDY / STUDENT SPACE</span></article><article class="status-card account-status"><div class="card-head"><span class="card-eyebrow">APPLICATION STATUS</span><span class="outline-icon"><svg><use href="#i-clock"/></svg></span></div><h3>Applications<br><span>opening after registration.</span></h3><p>Buddy will open applications once NCR credit-provider registration and secure account services are complete.</p><div class="status-lines"><div><span><svg><use href="#i-shield"/></svg> Student account</span><strong>Not open yet</strong></div><div><span><svg><use href="#i-plan"/></svg> Loan application</span><strong>Not open yet</strong></div></div></article></div>
-          <div class="section-title-row"><div><span class="section-kicker">YOUR APPLICATION JOURNEY</span><h2>Four clear steps. No surprises.</h2></div><span class="title-flourish">✳</span></div>
-          <div class="journey-tiles"><button type="button" data-go="application"><b>01</b><strong>Choose an amount</strong><small>Explore up to R700</small><svg><use href="#i-chevron"/></svg></button><button type="button" data-go="application" data-step-go="2"><b>02</b><strong>Get your documents ready</strong><small>Know what you’ll need</small><svg><use href="#i-chevron"/></svg></button><button type="button" data-go="application" data-step-go="3"><b>03</b><strong>Understand the checks</strong><small>Affordability comes first</small><svg><use href="#i-chevron"/></svg></button><button type="button" data-go="application" data-step-go="4"><b>04</b><strong>Review before deciding</strong><small>See costs and timing</small><svg><use href="#i-chevron"/></svg></button></div>
-          <p class="account-opening-note"><svg><use href="#i-shield"/></svg><span><strong>Applications open after registration.</strong> Secure account access, document uploads and lending assessments will be available once Buddy is ready to accept applications.</span></p>
+          <div class="page-intro account-intro"><div><span class="section-kicker"><span class="signal-dot"></span> ACCOUNT OVERVIEW</span><h1 id="overview-title">Your account,<br><em>at a glance.</em></h1><p>Your loan status, application updates and repayment details belong together here.</p></div><span class="page-index">BUDDY ACCOUNT</span></div>
+          <section class="account-snapshot" aria-label="Your Buddy account summary">
+            <div class="snapshot-heading"><div><span class="snapshot-kicker">YOUR LOAN ACCOUNT</span><h2>No active loan</h2><p>When your account is ready, this is where your current loan and its progress will appear.</p></div><span class="snapshot-status"><i></i> Account opening soon</span></div>
+            <div class="snapshot-metrics">
+              <article><span>Application</span><strong>Not started</strong><small>Applications aren’t open yet</small></article>
+              <article><span>Next repayment</span><strong>None scheduled</strong><small>No payment is due</small></article>
+              <article><span>Amount you could request</span><strong>Up to R700</strong><small>Subject to assessment; not an approved limit</small></article>
+            </div>
+            <div class="snapshot-foot"><svg><use href="#i-shield"/></svg><span>We’ll show your exact amount, costs and verified repayment date before you decide to accept a loan.</span></div>
+          </section>
+          <div class="overview-lower">
+            <section class="account-activity-card" aria-labelledby="recent-activity-title"><div class="account-section-heading"><div><span class="section-kicker">ACCOUNT ACTIVITY</span><h2 id="recent-activity-title">Recent updates</h2></div><a href="#activity" data-view-link="activity">All activity <svg><use href="#i-arrow"/></svg></a></div><div class="activity-empty"><span class="activity-empty-icon"><svg><use href="#i-activity"/></svg></span><div><strong>No updates yet</strong><p>Your application progress, loan activity and repayment reminders will appear here.</p></div></div></section>
+            <section class="account-next-card"><span class="section-kicker">YOUR NEXT STEP</span><span class="next-step-icon"><svg><use href="#i-file"/></svg></span><h2>Get ready, at your own pace.</h2><p>Check the documents you’ll need. Nothing is uploaded or assessed here.</p><button type="button" data-go="prepare">View document checklist <svg><use href="#i-arrow"/></svg></button><small>Applications open after NCR registration and secure account services are ready.</small></section>
+          </div>
         </section>
 
         <section class="view" id="application" data-view="application" aria-labelledby="plan-title" hidden>

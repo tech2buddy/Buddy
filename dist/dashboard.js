@@ -2,7 +2,6 @@ const sections = new Set(['overview', 'application', 'prepare', 'activity']);
 const sectionNames = { overview: 'Home', application: 'Application', prepare: 'Documents', activity: 'Activity' };
 const steps = ['Choose an amount', 'Get your documents ready', 'Understand the checks', 'Review before deciding'];
 const amountStorageKey = 'buddy.application.amount';
-let loanHistory = 'first';
 let activeSection = 'overview';
 let activeStep = 1;
 
@@ -48,6 +47,29 @@ window.addEventListener('hashchange', () => renderRoute({ focus: true }));
 const amountRange = document.querySelector('#amount-range');
 const amountOutput = document.querySelector('#amount-output');
 const reviewAmount = document.querySelector('#review-amount');
+function formatRand(value) { return `R${Math.round(value).toLocaleString('en-ZA')}`; }
+function updateEstimate(amount) {
+  const initiation = Math.round(amount * 0.15);
+  const firstInterest = Math.round(amount * 0.05);
+  const repeatInterest = Math.round(amount * 0.03);
+  const firstService = Math.min(60, Math.round(amount * 0.20));
+  const repeatService = Math.min(60, Math.round(amount * 0.22));
+  const values = {
+    '#quote-principal': amount,
+    '#first-interest': firstInterest,
+    '#repeat-interest': repeatInterest,
+    '#first-initiation': initiation,
+    '#repeat-initiation': initiation,
+    '#first-service': firstService,
+    '#repeat-service': repeatService,
+    '#first-total': amount + firstInterest + initiation + firstService,
+    '#repeat-total': amount + repeatInterest + initiation + repeatService
+  };
+  Object.entries(values).forEach(([selector, value]) => {
+    const element = document.querySelector(selector);
+    if (element) element.textContent = formatRand(value);
+  });
+}
 function updateAmount() {
   const amount = Number(amountRange.value);
   amountOutput.value = String(amount);
@@ -70,27 +92,6 @@ document.querySelectorAll('[data-amount]').forEach(button => button.addEventList
   updateAmount();
 }));
 updateAmount();
-document.querySelectorAll('[data-loan-history]').forEach(button => button.addEventListener('click', () => {
-  loanHistory = button.dataset.loanHistory;
-  document.querySelectorAll('[data-loan-history]').forEach(option => option.setAttribute('aria-pressed', String(option === button)));
-  updateEstimate(Number(amountRange.value));
-}));
-
-function updateEstimate(amount) {
-  const repeat = loanHistory === 'repeat';
-  const interestRate = repeat ? 0.03 : 0.05;
-  const serviceRate = repeat ? 0.22 : 0.20;
-  const interest = Math.round(amount * interestRate);
-  const initiation = Math.round(amount * 0.15);
-  const service = Math.min(60, Math.round(amount * serviceRate));
-  const formatRand = value => `R${Math.round(value).toLocaleString('en-ZA')}`;
-  document.querySelector('#quote-principal').textContent = formatRand(amount);
-  document.querySelector('#quote-interest-label').textContent = `Interest · ${Math.round(interestRate * 100)}% monthly`;
-  document.querySelector('#quote-interest').textContent = formatRand(interest);
-  document.querySelector('#quote-initiation').textContent = formatRand(initiation);
-  document.querySelector('#quote-service').textContent = formatRand(service);
-  document.querySelector('#estimate-total').textContent = formatRand(amount + interest + initiation + service);
-}
 function renderStep(step) {
   activeStep = step;
   const nextButton = document.querySelector('#next-step');

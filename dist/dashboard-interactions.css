@@ -1,0 +1,9 @@
+/* Keep route changes calm and give every tap a small, consistent response. */
+.view{animation:view-in .32s cubic-bezier(.2,.75,.25,1) both}
+button:not(:disabled),.quick-card,.journey-tiles button,.doc-item summary,.documents-back,.mobile-nav a,.side-nav a{ -webkit-tap-highlight-color:transparent }
+button:not(:disabled):active,.quick-card:active,.journey-tiles button:active,.documents-back:active{transform:scale(.985)}
+.feature-button,.care-card button,.empty-card button,.text-link,.documents-apply-link,.next-step,.back-step{transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .18s ease,box-shadow .18s ease,color .18s ease}
+.doc-item summary{transition:background-color .18s ease}
+.doc-item summary:active{background:#fbf8f8}
+.mobile-nav a,.side-nav a{touch-action:manipulation}
+@media(prefers-reduced-motion:reduce){.view{animation:none!important}button:not(:disabled),.quick-card,.journey-tiles button,.documents-back,.feature-button,.care-card button,.empty-card button,.text-link,.documents-apply-link,.next-step,.back-step,.doc-item summary{transition:none!important}}

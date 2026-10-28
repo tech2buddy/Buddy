@@ -5,6 +5,7 @@ const headings = [['Choose an ', 'amount.'], ['Get your ', 'documents ready.'], 
 const amountStorageKey = 'buddy.application.amount';
 let activeSection = 'overview';
 let activeStep = 1;
+let renderedRouteKey = null;
 
 function readRoute() {
   const [section, step] = window.location.hash.slice(1).split('/');
@@ -14,8 +15,11 @@ function readRoute() {
   };
 }
 
-function renderRoute({ focus = false } = {}) {
+function renderRoute({ focus = false, scroll = false } = {}) {
   const route = readRoute();
+  const routeKey = `${route.section}/${route.step}`;
+  if (routeKey === renderedRouteKey) return;
+  renderedRouteKey = routeKey;
   activeSection = route.section;
   document.querySelectorAll('[data-view]').forEach(panel => { panel.hidden = panel.dataset.view !== activeSection; });
   document.querySelectorAll('[data-view-link]').forEach(link => {
@@ -26,14 +30,19 @@ function renderRoute({ focus = false } = {}) {
   document.title = `${sectionNames[activeSection]} — Buddy Loans`;
   if (activeSection === 'application') renderStep(route.step);
   if (focus) document.querySelector('#dashboard-main').focus({ preventScroll: true });
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  if (scroll) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
 }
 
 function navigate(section, step = 1) {
   if (!sections.has(section)) return;
   const hash = section === 'application' ? `#application/${step}` : `#${section}`;
-  if (window.location.hash === hash) renderRoute({ focus: true });
-  else window.location.hash = hash;
+  const current = readRoute();
+  if (current.section === section && (section !== 'application' || current.step === step)) return;
+  window.history.pushState(null, '', hash);
+  renderRoute({ focus: true, scroll: true });
 }
 
 document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => {
@@ -43,7 +52,9 @@ document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListe
   event.preventDefault();
   navigate(link.dataset.viewLink, 1);
 }));
-window.addEventListener('hashchange', () => renderRoute({ focus: true }));
+window.addEventListener('hashchange', () => renderRoute({ focus: true, scroll: true }));
+window.addEventListener('popstate', () => renderRoute({ focus: true, scroll: true }));
+if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
 
 const amountRange = document.querySelector('#amount-range');
 const amountOutput = document.querySelector('#amount-output');

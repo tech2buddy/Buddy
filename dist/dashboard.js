@@ -74,7 +74,7 @@ function renderStep(step) {
   const nextButton = document.querySelector('#next-step');
   nextButton.dataset.finished = 'false';
   document.querySelector('#application-status').classList.remove('completion-note');
-  document.querySelector('#application-status').textContent = 'Applications open after Buddy completes NCR credit-provider registration and launches secure account services.';
+  document.querySelector('#application-status').textContent = 'Applications open once Buddy is registered with the NCR and secure account services are live.';
   document.querySelectorAll('[data-application-step]').forEach(panel => {
     panel.hidden = Number(panel.dataset.applicationStep) !== activeStep;
   });
@@ -97,8 +97,8 @@ function renderStep(step) {
     'Finish'
   ][activeStep - 1] + ' <svg><use href="#i-arrow"/></svg>';
   document.querySelector('#application-status').textContent = activeStep === 4
-    ? 'Account registration and applications open after Buddy completes NCR credit-provider registration and launches secure account services.'
-    : 'Applications open after Buddy completes NCR credit-provider registration and launches secure account services.';
+    ? 'Account registration and applications open once Buddy is registered with the NCR and secure account services are live.'
+    : 'Applications open once Buddy is registered with the NCR and secure account services are live.';
 }
 
 document.querySelector('#back-step').addEventListener('click', () => {

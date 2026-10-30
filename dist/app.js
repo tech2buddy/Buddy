@@ -42,6 +42,7 @@ document.querySelector('#explore-dialog').addEventListener('click', () => { dial
 document.querySelectorAll('[data-account-open]').forEach(button => button.addEventListener('click', () => { closeMenu(); accountDialog.showModal(); }));
 document.querySelector('.account-close').addEventListener('click', () => accountDialog.close());
 accountDialog.addEventListener('click', event => { if (event.target === accountDialog) { const bounds = accountDialog.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) accountDialog.close(); } });
+if (new URLSearchParams(window.location.search).get('open') === 'account') accountDialog.showModal();
 document.querySelector('.motion-toggle').addEventListener('click', event => { const paused = document.body.classList.toggle('motion-paused'); event.currentTarget.textContent = paused ? '▷' : 'Ⅱ'; const label = paused ? 'Play decorative motion' : 'Pause decorative motion'; event.currentTarget.title = label; event.currentTarget.setAttribute('aria-label', label); });
 
 // Keep the primary action reachable after the first screen, without covering

@@ -1,7 +1,7 @@
 const sections = new Set(['overview', 'application', 'prepare', 'activity']);
 const sectionNames = { overview: 'Home', application: 'Application', prepare: 'Documents', activity: 'Activity' };
-const steps = ['Choose an amount', 'Get your documents ready', 'Understand the checks', 'Review before deciding'];
-const headings = [['Choose an ', 'amount.'], ['Get your ', 'documents ready.'], ['Understand ', 'the checks.'], ['Review ', 'before deciding.']];
+const steps = ['Create your student account', 'Choose an amount', 'Prepare your documents', 'Check affordability', 'Review your offer', 'Authorise the debit order', 'Receive your funds'];
+const headings = [['Create your ', 'student account.'], ['Choose an ', 'amount.'], ['Prepare your ', 'documents.'], ['Check ', 'affordability.'], ['Review your ', 'offer.'], ['Authorise the ', 'debit order.'], ['Funds are sent ', 'after acceptance.']];
 const amountStorageKey = 'buddy.application.amount';
 let activeSection = 'overview';
 let activeStep = 1;
@@ -11,7 +11,7 @@ function readRoute() {
   const [section, step] = window.location.hash.slice(1).split('/');
   return {
     section: sections.has(section) ? section : 'overview',
-    step: section === 'application' ? Math.min(4, Math.max(1, Number(step) || 1)) : 1
+    step: section === 'application' ? Math.min(7, Math.max(1, Number(step) || 1)) : 1
   };
 }
 
@@ -142,9 +142,17 @@ function renderStep(step) {
     panel.hidden = Number(panel.dataset.applicationStep) !== activeStep;
   });
   document.querySelector('#step-label').textContent = steps[activeStep - 1];
-  document.querySelector('#step-count').textContent = `Step ${activeStep} of 4`;
-  document.querySelector('#step-index').textContent = `0${activeStep} / 04`;
-  document.querySelector('#step-description').textContent = ['Choose an amount and see one clear repayment estimate.', 'Get your required student and income documents ready.', 'See how affordability and verification checks work.', 'Review the full amount and due date before deciding.'][activeStep - 1];
+  document.querySelector('#step-count').textContent = `Step ${activeStep} of ${steps.length}`;
+  document.querySelector('#step-index').textContent = `0${activeStep} / 0${steps.length}`;
+  document.querySelector('#step-description').textContent = [
+    'Create an account with your university-issued email before you apply.',
+    'Choose the amount you need and see the proposed repayment estimate.',
+    'Prepare your ID, registration proof, residence proof and recent bank statements.',
+    'Review verified income, spending and existing commitments against the amount requested.',
+    'If eligible, read the complete offer, fees, total and repayment date before deciding.',
+    'A separate debit-order mandate must be reviewed and explicitly accepted before funds are released.',
+    'Funds can only be sent after approval, agreement and debit-order authorisation.'
+  ][activeStep - 1];
   const heading = document.querySelector('#plan-title');
   heading.replaceChildren(document.createTextNode(headings[activeStep - 1][0]));
   const accent = document.createElement('em');
@@ -152,20 +160,30 @@ function renderStep(step) {
   heading.append(accent);
   const progressTrack = document.querySelector('.application-intro .progress-track');
   progressTrack.setAttribute('aria-valuenow', String(activeStep));
-  progressTrack.setAttribute('aria-valuetext', `Step ${activeStep} of 4`);
-  document.querySelector('#progress-fill').style.width = `${activeStep * 25}%`;
+  progressTrack.setAttribute('aria-valuemax', String(steps.length));
+  progressTrack.setAttribute('aria-valuetext', `Step ${activeStep} of ${steps.length}`);
+  document.querySelector('#progress-fill').style.width = `${(activeStep / steps.length) * 100}%`;
 
   document.querySelector('#back-step').disabled = activeStep === 1;
   document.querySelector('#back-step').setAttribute('aria-label', activeStep === 1 ? 'Back to student space' : `Back to step ${activeStep - 1}`);
   nextButton.innerHTML = [
+    'Continue to amount',
     'Continue to documents',
     'Continue to affordability',
-    'Review your application',
-    'Finish'
+    'Review your offer',
+    'Continue to debit order',
+    'See what happens next',
+    'Return to student space'
   ][activeStep - 1] + ' <svg><use href="#i-arrow"/></svg>';
-  document.querySelector('#application-status').textContent = activeStep === 4
-    ? 'Account registration and applications open once Buddy is registered with the NCR and secure account services are live.'
-    : 'Applications open once Buddy is registered with the NCR and secure account services are live.';
+  document.querySelector('#application-status').textContent = [
+    'Account sign-up is not open yet. This guided flow does not create an account or save an application.',
+    'Applications and personalised estimates become available when secure account services are live.',
+    'Secure document upload is not open yet. Do not send personal documents through this page.',
+    'Affordability and credit checks are not active here. No documents are being analysed.',
+    'No lending decision or final offer is made on this page.',
+    'No debit order is created or accepted here. Authorisation must be explicit and separate.',
+    'No funds are requested or transferred here. Disbursement follows completed approval and acceptance.'
+  ][activeStep - 1];
 }
 
 document.querySelector('#back-step').addEventListener('click', () => {
@@ -177,10 +195,10 @@ document.querySelector('#next-step').addEventListener('click', () => {
   const status = document.querySelector('#application-status');
   if (next.dataset.finished === 'true') {
     navigate('overview');
-  } else if (activeStep < 4) {
+  } else if (activeStep < steps.length) {
     navigate('application', activeStep + 1);
   } else {
-    status.textContent = 'You’ve reached the final step. Account registration and loan applications are not open yet, so nothing has been submitted.';
+    status.textContent = 'You’ve reached the end of the guided journey. Account sign-up, document upload, affordability checks and loan applications are not open here.';
     status.classList.add('completion-note');
     next.textContent = 'Return to student space';
     next.dataset.finished = 'true';

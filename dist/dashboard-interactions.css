@@ -5,5 +5,7 @@ button:not(:disabled):active,.quick-card:active,.journey-tiles button:active,.do
 .feature-button,.care-card button,.empty-card button,.text-link,.documents-apply-link,.next-step,.back-step{transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .18s ease,box-shadow .18s ease,color .18s ease}
 .doc-item summary{transition:background-color .18s ease}
 .doc-item summary:active{background:#fbf8f8}
+.account-step-notice{display:flex;align-items:flex-start;gap:11px;margin-top:18px;padding:13px 14px;border-radius:14px;background:#fff6f2;color:#68758b}.account-step-notice>svg{width:17px;height:17px;flex:none;color:#e65351}.account-step-notice>span{display:grid;gap:4px}.account-step-notice strong{font-size:10px;color:#101a2c}.account-step-notice small{font-size:9px;line-height:1.55;color:#7e8ba0}.account-access-link{display:inline-flex;align-items:center;gap:10px;margin-top:17px;text-decoration:none;color:#101a2c;font-size:10px;font-weight:800}.account-access-link svg{width:14px;height:14px;color:#e65351}
 .mobile-nav a,.side-nav a{touch-action:manipulation}
+@media(max-width:520px){.account-step-notice{padding:12px}.account-step-notice strong{font-size:9px}.account-step-notice small{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.view{animation:none!important}button:not(:disabled),.quick-card,.journey-tiles button,.documents-back,.feature-button,.care-card button,.empty-card button,.text-link,.documents-apply-link,.next-step,.back-step,.doc-item summary{transition:none!important}}

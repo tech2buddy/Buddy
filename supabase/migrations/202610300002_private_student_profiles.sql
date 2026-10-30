@@ -19,6 +19,7 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles enable row level security;
+grant usage on schema public to authenticated;
 revoke all on table public.profiles from public, anon;
 grant select, insert, update on table public.profiles to authenticated;
 

@@ -205,9 +205,18 @@
         profileCheck = Promise.resolve();
         showSignedIn(user);
         completeSignIn();
-      } catch {
+      } catch (error) {
+        console.warn('Buddy profile save failed; database error code:', error?.code || 'network');
         button.disabled = false; button.querySelector('span').textContent = '↗';
-        err.textContent = 'We couldn’t save your profile. Please try again.'; err.hidden = false;
+        const code = error?.code;
+        err.textContent = code === '42501'
+          ? 'Supabase blocked access. Check the profile table permissions and your own-profile security policies.'
+          : ['42P01', 'PGRST205'].includes(code)
+            ? 'Supabase can’t find the profiles table in the website API yet. Check that the profile SQL ran successfully, then refresh.'
+            : code === '23514' || code === '23502'
+              ? 'One of these details was not accepted. Check the required fields and try again.'
+              : 'We couldn’t save your profile. Please try again.';
+        err.hidden = false;
       }
     });
   };

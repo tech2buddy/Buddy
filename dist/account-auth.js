@@ -183,6 +183,7 @@
       event.preventDefault();
       if (!onboarding.reportValidity()) return;
       const profile = Object.fromEntries(new FormData(onboarding).entries());
+      delete profile.profile_consent;
       for (const key of ['first_name', 'last_name', 'hometown', 'home_address', 'phone', 'next_of_kin_name', 'next_of_kin_phone', 'personal_email', 'referral_other']) profile[key] = String(profile[key] || '').trim();
       profile.personal_email = profile.personal_email.toLowerCase();
       profile.whatsapp_phone = String(profile.whatsapp_phone || profile.phone).trim();
@@ -215,7 +216,9 @@
             ? 'Supabase can’t find the profiles table in the website API yet. Check that the profile SQL ran successfully, then refresh.'
             : code === '23514' || code === '23502'
               ? 'One of these details was not accepted. Check the required fields and try again.'
-              : 'We couldn’t save your profile. Please try again.';
+              : code === 'PGRST204'
+                ? 'The profile fields need to be refreshed. Reload Buddy Loans and try again.'
+                : `We couldn’t save your profile. Please try again${code ? ` (code ${code})` : ''}.`;
         err.hidden = false;
       }
     });

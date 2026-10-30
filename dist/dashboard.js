@@ -64,6 +64,8 @@ function updateDocumentsAccess() {
   if (content) content.hidden = !signedIn;
   if (!signedIn) {
     documentForm?.reset();
+    const fileLabel = document.querySelector('#document-file-label');
+    if (fileLabel) fileLabel.textContent = 'Choose a file';
     documentStatus.textContent = '';
     documentList?.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'Sign in to see your secure uploads.' }));
     updateDocumentUploadButton();
@@ -202,6 +204,8 @@ documentInput?.addEventListener('change', () => {
     documentStatus.textContent = 'Choose a PDF, JPG or PNG file under 10 MB.';
     documentInput.value = '';
   }
+  const fileLabel = document.querySelector('#document-file-label');
+  if (fileLabel) fileLabel.textContent = documentInput.files?.[0]?.name || 'Choose a file';
   updateDocumentUploadButton();
 });
 documentForm?.addEventListener('submit', async event => {
@@ -215,6 +219,7 @@ documentForm?.addEventListener('submit', async event => {
     const { error } = await window.BuddyAuth.uploadDocument(document.querySelector('#document-type').value, file);
     if (error) throw error;
     documentForm.reset();
+    document.querySelector('#document-file-label').textContent = 'Choose a file';
     documentStatus.textContent = 'Uploaded securely to your account.';
     await loadStudentDocuments();
   } catch (error) {

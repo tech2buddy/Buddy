@@ -19,12 +19,12 @@
   <link rel="stylesheet" href="dashboard-sections.css?v=buddy-dashboard-5">
   <link rel="stylesheet" href="dashboard-responsive.css?v=buddy-dashboard-5">
   <link rel="stylesheet" href="dashboard-account.css?v=application-redesign-2">
-  <link rel="stylesheet" href="dashboard-documents.css?v=private-document-upload-1">
+  <link rel="stylesheet" href="dashboard-documents.css?v=docs-redesign-2">
   <link rel="stylesheet" href="dashboard-interactions.css?v=loan-journey-2">
   <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
   <link rel="stylesheet" href="dashboard-mobile.css?v=profile-settings-1">
   <link rel="stylesheet" href="account-flow.css?v=profile-settings-3">
-  <script src="dashboard.js?v=private-document-upload-1" defer></script>
+  <script src="dashboard.js?v=docs-redesign-2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="account-auth.js?v=private-document-upload-1" defer></script>
 </head>
@@ -111,24 +111,21 @@
               <div class="documents-email-note"><span class="documents-email-icon"><svg><use href="#i-mail"/></svg></span><span><strong>Use your university email</strong><small>Your student email is needed to create and access your account.</small></span></div>
             </article>
             <aside class="documents-side-card documents-upload-card">
-              <span class="documents-lock"><svg><use href="#i-shield"/></svg></span><span class="section-kicker">PRIVATE DOCUMENTS</span>
-              <h2>Keep everything in one secure place.</h2>
-              <p>Sign in to upload a document to your account. PDF, JPG or PNG · up to 10 MB each.</p>
-              <div id="documents-signin-gate" class="documents-gate"><span class="documents-status"><i></i><span><strong>Sign in to continue</strong><small>Your uploads are private to your account.</small></span></span><button type="button" class="documents-apply-link" id="documents-signin-button">Sign in to your account <svg><use href="#i-arrow"/></svg></button></div>
+              <div class="documents-upload-header"><span class="documents-lock"><svg><use href="#i-shield"/></svg></span><div><span class="section-kicker">PRIVATE DOCUMENTS</span><h2>Your document space.</h2></div></div>
+              <p class="documents-upload-intro">Upload your documents once. They stay in your account, where you can open or remove them anytime.</p>
+              <div id="documents-signin-gate" class="documents-gate"><div class="documents-status"><i></i><span><strong>Sign in to continue</strong><small>Your uploads are private to your account.</small></span></div><button type="button" class="documents-apply-link" id="documents-signin-button">Sign in to your account <svg><use href="#i-arrow"/></svg></button></div>
               <div id="documents-authenticated" hidden>
                 <form id="document-upload-form" class="document-upload-form">
-                  <label for="document-type">Document type</label>
-                  <select id="document-type" name="type" required><option value="south_african_id">South African ID</option><option value="proof_of_registration">Proof of registration</option><option value="proof_of_residence">Proof of residence</option><option value="bank_statements">Three months of bank statements</option></select>
-                  <label for="document-file">Choose a file</label>
-                  <input id="document-file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required>
+                  <div class="document-field"><label for="document-type">What are you uploading?</label><select id="document-type" name="type" required><option value="south_african_id">South African ID</option><option value="proof_of_registration">Proof of registration</option><option value="proof_of_residence">Proof of residence</option><option value="bank_statements">Three months of bank statements</option></select></div>
+                  <label class="document-dropzone" for="document-file"><span class="document-drop-icon" aria-hidden="true">↑</span><span class="document-drop-copy"><strong id="document-file-label">Choose a file</strong><small>PDF, JPG or PNG · up to 10 MB</small></span><span class="document-browse">Browse</span><input id="document-file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required></label>
                   <small class="document-file-help">For bank statements, combine your latest three consecutive months into one file.</small>
-                  <label class="document-consent"><input type="checkbox" id="document-consent" required><span>I confirm this is my document and agree to store it in my Buddy account for student verification and future application review. I can remove it here.</span></label>
+                  <label class="document-consent"><input type="checkbox" id="document-consent" required><span>I confirm this is my document and agree to store it in my Buddy account. I can remove it anytime.</span></label>
                   <button class="documents-apply-link" id="document-upload-button" type="submit" disabled>Upload securely <svg><use href="#i-arrow"/></svg></button>
                   <p class="document-upload-status" id="document-upload-status" role="status" aria-live="polite"></p>
                 </form>
-                <div class="document-upload-list"><div class="document-upload-list-heading"><strong>Your uploads</strong><button type="button" id="document-refresh-button" aria-label="Refresh uploaded documents">Refresh</button></div><div id="document-list" aria-live="polite"><p class="document-list-empty">Loading your documents…</p></div></div>
+                <div class="document-upload-list"><div class="document-upload-list-heading"><div><span class="section-kicker">YOUR ACCOUNT</span><strong>Your uploads</strong></div><button type="button" id="document-refresh-button" aria-label="Refresh uploaded documents">Refresh</button></div><div id="document-list" aria-live="polite"><p class="document-list-empty">Loading your documents…</p></div></div>
               </div>
-              <p class="document-boundary">Uploads are stored but not scanned or assessed here. Uploading does not submit a loan application or guarantee approval.</p>
+              <div class="document-boundary"><svg aria-hidden="true"><use href="#i-shield"/></svg><p>Files are stored securely but aren’t scanned or assessed here. Uploading doesn’t submit a loan application.</p></div>
             </aside>
           </div>
         </section>

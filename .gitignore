@@ -1,0 +1,14 @@
+# Local environment values
+.env
+.env.*
+!.env.example
+
+# Local build and hosting artifacts
+node_modules/
+.vercel/
+dist/runtime-config.js
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini

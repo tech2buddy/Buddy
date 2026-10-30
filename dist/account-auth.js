@@ -1,6 +1,6 @@
 (() => {
-  const SUPABASE_URL = 'https://wzvlanodljoluffbpoma.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_4pCer_MpDaOu25uvfANn2Q_sXUU9iWU';
+  const SUPABASE_URL = window.BuddyConfig?.supabaseUrl;
+  const SUPABASE_PUBLISHABLE_KEY = window.BuddyConfig?.supabasePublishableKey;
   const dialog = document.querySelector('#account-dialog');
   const accountState = dialog?.querySelector('.account-access-state');
   const sdk = window.supabase;
@@ -9,6 +9,15 @@
     if (accountState) {
       const message = document.createElement('p');
       message.textContent = 'Account services could not load. Please try again shortly.';
+      accountState.replaceChildren(message);
+    }
+    return;
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    if (accountState) {
+      const message = document.createElement('p');
+      message.textContent = 'Account services are not configured yet. Please try again later.';
       accountState.replaceChildren(message);
     }
     return;

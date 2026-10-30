@@ -1,0 +1,9 @@
+{
+  "name": "buddy-loans",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Buddy Loans student account and application website",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  }
+}

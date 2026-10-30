@@ -56,7 +56,7 @@ const profileEditMessage = document.querySelector('#profile-edit-message');
 const preferencesMessage = document.querySelector('#preference-save-message');
 const profilePreferenceTab = document.querySelector('#profile-tab-preferences');
 const profileDetailsTab = document.querySelector('#profile-tab-details');
-const profileDetailsPanel = document.querySelector('#profile-panel-details');
+const profileDetailsPanel = document.querySelector('#profile-edit-form');
 const profilePreferencesPanel = document.querySelector('#profile-panel-preferences');
 function showProfileSettingsTab(tab) {
   const showPreferences = tab === 'preferences';

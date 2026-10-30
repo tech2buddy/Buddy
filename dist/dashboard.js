@@ -354,7 +354,7 @@ document.querySelectorAll('[data-go]').forEach(button => button.addEventListener
 }));
 document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => {
   event.preventDefault();
-  navigate(link.dataset.viewLink, 1);
+  navigate(link.dataset.viewLink, link.dataset.viewLink === 'application' ? 2 : 1);
 }));
 window.addEventListener('hashchange', () => renderRoute({ focus: true, scroll: true }));
 window.addEventListener('popstate', () => renderRoute({ focus: true, scroll: true }));
@@ -394,12 +394,12 @@ function updateEstimate(amount) {
   const total = document.querySelector('#estimate-total');
   if (!currentLoanHistory) {
     label.textContent = 'ACCOUNT CHECK';
-    document.querySelector('#estimate-caption').textContent = 'Loan-history pricing is not connected yet';
+    document.querySelector('#estimate-caption').textContent = 'Your rate is being confirmed';
     total.textContent = '—';
     breakdown.hidden = true;
     legal.hidden = true;
     note.hidden = false;
-    note.textContent = 'Once you are signed in, Buddy checks your loan history and shows one rate: first-loan pricing if no loan was disbursed this calendar year, or repeat-loan pricing if one was.';
+    note.textContent = 'Your rate depends on whether a Buddy loan was disbursed to you earlier this calendar year. We’ll confirm the correct repayment amount before you decide.';
     return;
   }
   const repeat = currentLoanHistory === 'repeat';
@@ -441,7 +441,7 @@ function renderStep(step) {
   const nextButton = document.querySelector('#next-step');
   nextButton.dataset.finished = 'false';
   document.querySelector('#application-status').classList.remove('completion-note');
-  document.querySelector('#application-status').textContent = 'Applications open once Buddy is registered with the NCR and secure account services are live.';
+  document.querySelector('#application-status').textContent = 'Follow each step to complete your application.';
   document.querySelectorAll('[data-application-step]').forEach(panel => {
     panel.hidden = Number(panel.dataset.applicationStep) !== activeStep;
   });
@@ -480,13 +480,13 @@ function renderStep(step) {
     'Return to student space'
   ][activeStep - 1] + ' <svg><use href="#i-arrow"/></svg>';
   document.querySelector('#application-status').textContent = [
-    'Create or sign in to your SPU account first. This guided journey does not submit or save a loan application.',
-    'Loan-history pricing is not connected yet, so no personalised repayment estimate is shown.',
+    'Sign in with your SPU email to continue with your application.',
+    'Your rate depends on whether a Buddy loan was disbursed to you earlier this calendar year.',
     'Upload documents from the Documents page. Files stay in private storage and are not scanned or assessed here.',
-    'Affordability and credit checks are not active here. No documents are being analysed.',
-    'No lending decision or final offer is made on this page.',
-    'No debit order is created or accepted here. Authorisation must be explicit and separate.',
-    'No funds are requested or transferred here. Disbursement follows completed approval and acceptance.'
+    'Your affordability review considers allowance, regular spending and existing repayment commitments.',
+    'Review the repayment total, fees and due date before you decide.',
+    'A debit-order mandate requires your separate, explicit authorisation.',
+    'Funds are sent after approval, agreement acceptance and debit-order authorisation.'
   ][activeStep - 1];
 }
 
@@ -530,7 +530,7 @@ document.querySelector('#next-step').addEventListener('click', async () => {
   } else if (activeStep < steps.length) {
     navigate('application', activeStep + 1);
   } else {
-    status.textContent = 'You’ve reached the end of the guided journey. Account sign-up, document upload, affordability checks and loan applications are not open here.';
+    status.textContent = 'You’ve reached the final step. Return to your account to review your details and documents.';
     status.classList.add('completion-note');
     next.textContent = 'Return to student space';
     next.dataset.finished = 'true';

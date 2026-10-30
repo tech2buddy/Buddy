@@ -146,7 +146,7 @@
           <label for="account-confirm-password">Confirm password</label>
           <div class="account-password-wrap"><input id="account-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="12" required><button class="account-show-password" type="button" data-password-toggle="account-confirm-password" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div>
         </div>
-        <p class="account-opening-note">Account access only. Loan applications are not open yet. Your email is used for verification and sign-in.</p>
+        <p class="account-opening-note">Your university email secures your Buddy account and keeps your application updates connected to you.</p>
         <p class="auth-message" id="account-auth-message" role="status" aria-live="polite"></p>
         <button class="button button-dark account-submit" id="account-auth-submit" type="submit">Create account <span aria-hidden="true">↗</span></button>
       </form>

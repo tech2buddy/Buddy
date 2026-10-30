@@ -46,8 +46,11 @@ function navigate(section, step = 1) {
 }
 
 let activeProfile = null;
+let activeSession = null;
+let authReady = false;
 const profileDialog = document.querySelector('#profile-settings-dialog');
 const profileOpenButton = document.querySelector('#profile-open-button');
+const accountDialog = document.querySelector('#account-dialog');
 const profileEditForm = document.querySelector('#profile-edit-form');
 const profileEditMessage = document.querySelector('#profile-edit-message');
 const preferencesMessage = document.querySelector('#preference-save-message');
@@ -72,6 +75,16 @@ function fillProfileSettings(profile) {
   document.querySelector('#preferred-contact-method').value = profile.preferred_contact_method || 'WhatsApp';
   document.querySelector('#profile-product-updates').checked = Boolean(profile.product_updates);
 }
+function updateProfileControl() {
+  const signedIn = Boolean(activeSession);
+  profileOpenButton.dataset.authenticated = String(signedIn);
+  profileOpenButton.setAttribute('aria-label', signedIn ? 'Open profile and preferences' : 'Sign in to your student account');
+  document.querySelector('#profile-header-name').textContent = signedIn ? (activeProfile?.display_name || 'My account') : 'Sign in';
+  document.querySelector('#profile-header-caption').textContent = signedIn ? 'Profile & preferences' : 'Student account';
+  document.querySelector('#profile-avatar').textContent = signedIn
+    ? (activeProfile ? `${activeProfile.first_name?.[0] || ''}${activeProfile.last_name?.[0] || ''}`.toUpperCase() : 'ME')
+    : '↗';
+}
 window.addEventListener('buddy-profile-ready', event => {
   const profile = event.detail?.profile;
   if (!profile) return;
@@ -79,23 +92,39 @@ window.addEventListener('buddy-profile-ready', event => {
   const name = profile.display_name || `${profile.first_name} ${profile.last_name}`.trim();
   document.querySelector('#profile-avatar').textContent = event.detail.initials || `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase();
   document.querySelector('#profile-header-name').textContent = name;
+  activeSession = activeSession || {};
   profileOpenButton.setAttribute('aria-label', `Signed in as ${name}. Open profile and preferences`);
-  profileOpenButton.hidden = false;
+  updateProfileControl();
   fillProfileSettings(profile);
 });
 window.addEventListener('buddy-auth-ready', async event => {
-  if (!event.detail?.session || !window.BuddyAuth?.getProfile) return;
-  const { data, error } = await window.BuddyAuth.getProfile();
-  if (!error && data) window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile: { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() } } }));
+  authReady = true;
+  activeSession = event.detail?.session || null;
+  updateProfileControl();
+  if (!activeSession || !window.BuddyAuth?.getProfile) return;
+  try {
+    const { data, error } = await window.BuddyAuth.getProfile();
+    if (!error && data) window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile: { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() } } }));
+  } catch { /* Keep the account entry point available if profile loading is temporarily unavailable. */ }
 });
 window.addEventListener('buddy-auth-state', event => {
   if (event.detail?.event === 'SIGNED_OUT') {
     activeProfile = null;
-    profileOpenButton.hidden = true;
+    activeSession = null;
+    authReady = true;
+    updateProfileControl();
     if (profileDialog.open) profileDialog.close();
+  } else if (event.detail?.session) {
+    activeSession = event.detail.session;
+    authReady = true;
+    updateProfileControl();
   }
 });
 profileOpenButton.addEventListener('click', async () => {
+  if (!authReady || !activeSession) {
+    if (!accountDialog.open) accountDialog.showModal();
+    return;
+  }
   // Open synchronously inside the tap. Mobile Safari can discard the user
   // gesture after an async Supabase request, preventing showModal() from opening.
   showProfileSettingsTab('details');

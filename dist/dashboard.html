@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="dashboard-interactions.css?v=loan-journey-2">
   <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
   <link rel="stylesheet" href="dashboard-mobile.css?v=profile-settings-1">
-  <link rel="stylesheet" href="account-flow.css?v=profile-settings-2">
-  <script src="dashboard.js?v=profile-settings-3" defer></script>
+  <link rel="stylesheet" href="account-flow.css?v=profile-settings-3">
+  <script src="dashboard.js?v=profile-settings-4" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="account-auth.js?v=profile-settings-1" defer></script>
 </head>
@@ -63,7 +63,7 @@
       <header class="topbar">
         <a class="mobile-brand dashboard-brand-mark" href="index.html" aria-label="Buddy Loans home"><span class="brand-motion account-brand-mark" aria-hidden="true"><svg viewBox="32 14 88 76" fill="none"><defs><linearGradient id="account-motion-paint" x1="37" y1="18" x2="106" y2="87" gradientUnits="userSpaceOnUse"><stop stop-color="#ffb184"/><stop offset=".35" stop-color="#ff813b"/><stop offset=".7" stop-color="#ff5367"/><stop offset="1" stop-color="#e63858"/></linearGradient></defs><circle cx="73" cy="61" r="21" stroke="url(#account-motion-paint)" stroke-width="17"/><path d="M67 40a21 21 0 0 1 23 10" stroke="#ffd0b4" stroke-width="1.8" stroke-linecap="round" opacity=".8"/><rect x="38" y="18" width="17" height="65" rx="8.5" fill="url(#account-motion-paint)"/><path d="M41 42V26a5 5 0 0 1 5-5" stroke="#ffe0c7" stroke-width="1.5" stroke-linecap="round" opacity=".7"/><circle cx="110" cy="78" r="7" fill="url(#account-motion-paint)"/><path d="M107 74a4 4 0 0 1 4-1" stroke="#ffd4b9" stroke-width="1.2" stroke-linecap="round"/></svg></span></a>
         <div class="topbar-context"><span class="topbar-eyebrow">STUDENT ACCOUNT</span><span class="topbar-title" id="current-section">Home</span></div>
-        <div class="topbar-right"><span class="topbar-tag"><span></span> Student space</span><button class="profile-control" id="profile-open-button" type="button" aria-haspopup="dialog" aria-controls="profile-settings-dialog" aria-label="Open profile and preferences" hidden><span class="profile-control-avatar" id="profile-avatar">BL</span><span class="profile-control-copy"><strong id="profile-header-name">My profile</strong><small>Profile & preferences</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div>
+        <div class="topbar-right"><span class="topbar-tag"><span></span> Student space</span><button class="profile-control" id="profile-open-button" type="button" aria-haspopup="dialog" aria-controls="profile-settings-dialog" aria-label="Sign in to your student account" data-authenticated="false"><span class="profile-control-avatar" id="profile-avatar" aria-hidden="true">↗</span><span class="profile-control-copy"><strong id="profile-header-name">Sign in</strong><small id="profile-header-caption">Student account</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div>
       </header>
 
       <main id="dashboard-main" tabindex="-1">

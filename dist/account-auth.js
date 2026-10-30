@@ -104,6 +104,11 @@
       return client.from('student_loan_applications').insert({ ...values, user_id: user.id })
         .select('id,requested_amount,current_step,status,created_at,updated_at').single();
     },
+    async submitApplication() {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      return client.rpc('submit_student_application');
+    },
     async getActivityEvents() {
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
@@ -132,7 +137,7 @@
       const { data: files, error: storageError } = await client.storage.from('student-documents').list(user.id, { limit: 40, sortBy: { column: 'created_at', order: 'desc' } });
       if (storageError) return { data: null, error: storageError };
       const { data: reviews, error: reviewError } = await client.from('student_document_reviews')
-        .select('object_path,document_type,review_status,review_note,reviewed_at,created_at')
+        .select('object_path,application_id,document_type,review_status,review_note,reviewed_at,created_at')
         .eq('user_id', user.id);
       if (reviewError) return { data: null, error: reviewError };
       const reviewByPath = new Map((reviews || []).map(review => [review.object_path, review]));

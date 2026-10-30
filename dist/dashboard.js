@@ -1,7 +1,5 @@
 const sections = new Set(['overview', 'application', 'prepare', 'activity']);
 const sectionNames = { overview: 'Home', application: 'Application', prepare: 'Documents', activity: 'Activity' };
-const steps = ['Create your student account', 'Choose an amount', 'Prepare your documents', 'Check affordability', 'Review your offer', 'Authorise the debit order', 'Receive your funds'];
-const headings = [['Create your ', 'student account.'], ['Choose an ', 'amount.'], ['Prepare your ', 'documents.'], ['Check ', 'affordability.'], ['Review your ', 'offer.'], ['Authorise the ', 'debit order.'], ['Funds are sent ', 'after acceptance.']];
 const amountStorageKey = 'buddy.application.amount';
 let activeSection = 'overview';
 let activeStep = 1;
@@ -17,10 +15,10 @@ function readRoute() {
 
 function renderRoute({ focus = false, scroll = false } = {}) {
   const route = readRoute();
-  if (route.section === 'application' && route.step === 3) {
-    route.section = 'prepare';
+  if (route.section === 'application' && route.step >= 3) {
+    route.section = route.step === 3 ? 'prepare' : 'activity';
     route.step = 1;
-    window.history.replaceState(null, '', '#prepare');
+    window.history.replaceState(null, '', `#${route.section}`);
   }
   const routeKey = `${route.section}/${route.step}`;
   if (routeKey === renderedRouteKey) return;
@@ -45,8 +43,8 @@ function renderRoute({ focus = false, scroll = false } = {}) {
 
 function navigate(section, step = 1) {
   if (!sections.has(section)) return;
-  if (section === 'application' && step === 3) {
-    navigate('prepare');
+  if (section === 'application' && step >= 3) {
+    navigate(step === 3 ? 'prepare' : 'activity');
     return;
   }
   const hash = section === 'application' ? `#application/${step}` : `#${section}`;
@@ -65,12 +63,16 @@ let activityWatchRequest = 0;
 let activityReloadTimer = 0;
 const documentLabels = { south_african_id: 'South African ID', proof_of_registration: 'Proof of registration', proof_of_residence: 'Proof of residence', bank_statements: 'Three months of bank statements' };
 const reviewStatusLabels = { pending: 'Pending review', reviewing: 'In review', accepted: 'Accepted', action_required: 'Action needed' };
+const requiredDocumentTypes = Object.keys(documentLabels);
+let uploadedDocumentTypes = new Set();
 const documentForm = document.querySelector('#document-upload-form');
 const documentInput = document.querySelector('#document-file');
 const documentConsent = document.querySelector('#document-consent');
 const documentUploadButton = document.querySelector('#document-upload-button');
 const documentStatus = document.querySelector('#document-upload-status');
 const documentList = document.querySelector('#document-list');
+const applicationSubmitButton = document.querySelector('#application-submit-button');
+const applicationSubmitStatus = document.querySelector('#application-submit-status');
 let accountWorkspaceRequest = 0;
 const activityEventTitles = {
   application_started: 'Application started',
@@ -105,27 +107,39 @@ function renderActivityFeed(events, listId, emptyId, limit = 50) {
   }
 }
 function updateApplicationSummary(application, documentCount = null) {
-  const statusLabels = { draft: 'In progress', submitted: 'Submitted', under_review: 'In review', action_required: 'Action needed', approved: 'Approved', disbursed: 'Funds sent', declined: 'Decision complete', cancelled: 'Cancelled' };
+  const statusLabels = { draft: 'In progress', submitted: 'Submitted · awaiting review', under_review: 'In review', action_required: 'Update requested', approved: 'Approved · mandate next', disbursed: 'Funds sent', declined: 'Unsuccessful', cancelled: 'Cancelled' };
   const status = application ? (statusLabels[application.status] || 'In progress') : 'Not started';
-  const hint = application ? `Step ${application.current_step} of 7 · last saved ${displayActivityDate(application.updated_at)}` : 'Choose an amount to get started';
+  const hint = application?.status === 'draft'
+    ? `Amount ${application.requested_amount ? `R${application.requested_amount} · ` : ''}${Number(application.current_step) >= 3 ? 'documents next' : 'ready to continue'} · saved ${displayActivityDate(application.updated_at)}`
+    : application ? `Updated ${displayActivityDate(application.updated_at)}` : 'Choose an amount to get started';
   const set = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value; };
   set('#overview-application-status', status);
   set('#overview-application-hint', hint);
+  const applicationMessages = {
+    draft: 'Your amount is saved. Upload all four required document types and submit when you’re ready.',
+    submitted: 'Your application is with Buddy for document and affordability review. We’ll post the decision or next step here.',
+    under_review: 'Buddy is reviewing your application. Check here for a decision or a request for more information.',
+    action_required: 'Buddy has asked for an update before the review can continue. Check Activity for details, replace any requested documents, then resubmit.',
+    approved: 'Buddy will share your final offer and debit-order mandate for you to review and accept separately. Nothing is collected until you authorise it.',
+    declined: 'Your application was unsuccessful. We’ll show any update here; contact Buddy if you need help.',
+    disbursed: 'Your loan has been disbursed. Your account activity will show the latest repayment and loan updates.',
+    cancelled: 'This application is closed. You can contact Buddy if you need help.'
+  };
   set('#activity-application-title', application ? `Application ${status.toLowerCase()}` : 'No application in progress');
-  set('#activity-application-description', application ? 'Your saved application stays connected to your documents and account updates.' : 'Start an application to keep your requested amount, documents and progress together.');
+  set('#activity-application-description', application ? applicationMessages[application.status] || 'Your application updates will appear here.' : 'Start an application to keep your requested amount, documents and progress together.');
   set('#activity-application-status', status);
   set('#activity-application-amount', application ? `R${application.requested_amount}` : 'Not selected');
   set('#activity-document-count', documentCount === null ? (activeSession ? 'Unable to load uploads' : 'Sign in to view your uploads') : `${documentCount} document${documentCount === 1 ? '' : 's'} uploaded`);
   const hasDraft = application?.status === 'draft';
-  const awaitingUpdate = application && ['submitted', 'under_review', 'action_required', 'approved'].includes(application.status);
+  const awaitingUpdate = application && ['submitted', 'under_review', 'action_required', 'approved', 'declined', 'disbursed', 'cancelled'].includes(application.status);
   const nextStep = hasDraft ? Number(application.current_step) : 2;
-  const nextDestination = nextStep === 3 ? 'prepare' : 'application';
+  const nextDestination = nextStep >= 3 ? 'prepare' : 'application';
   for (const selector of ['#overview-application-button', '#activity-continue-button', '#activity-empty-state button']) {
     const button = document.querySelector(selector);
     if (!button) continue;
     button.dataset.go = awaitingUpdate ? 'activity' : nextDestination;
     button.dataset.stepGo = String(nextStep);
-    const text = hasDraft ? (nextStep === 3 ? 'Continue to documents' : 'Continue application') : awaitingUpdate ? 'View updates' : application ? 'Start another application' : 'Start application';
+    const text = hasDraft ? (nextStep >= 3 ? 'Continue to documents' : 'Continue application') : awaitingUpdate ? 'View updates' : application ? 'Start another application' : 'Start application';
     button.firstChild.textContent = text + ' ';
   }
   set('#overview-apply-title', hasDraft ? 'Continue where you left off.' : awaitingUpdate ? 'Your application is moving forward.' : 'Start your application.');
@@ -163,6 +177,7 @@ async function loadAccountWorkspace() {
   }
   if (request !== accountWorkspaceRequest) return;
   activeApplication = applicationResult.error ? null : applicationResult.data;
+  updateDocumentWorkflowVisibility();
   if (activeApplication?.status === 'draft' && Number(amountRange?.value) !== activeApplication.requested_amount) {
     amountRange.value = String(activeApplication.requested_amount);
     amountRange.dispatchEvent(new Event('input', { bubbles: true }));
@@ -252,12 +267,60 @@ function updateDocumentsAccess() {
     document.querySelectorAll('[data-document-status]').forEach(badge => { badge.textContent = 'Not uploaded'; badge.className = 'doc-review-status is-missing'; });
     const progressCount = document.querySelector('#documents-progress-count');
     if (progressCount) progressCount.textContent = '0/4';
+    uploadedDocumentTypes = new Set();
     updateDocumentUploadButton();
   }
+  updateDocumentWorkflowVisibility();
   if (signedIn && activeSection === 'prepare') loadStudentDocuments();
 }
+function updateDocumentWorkflowVisibility() {
+  const signedIn = Boolean(activeSession);
+  const canPrepare = ['draft', 'action_required'].includes(activeApplication?.status);
+  const startGate = document.querySelector('#documents-start-gate');
+  const lockedNotice = document.querySelector('#documents-locked-notice');
+  const form = document.querySelector('#document-upload-form');
+  const submitPanel = document.querySelector('#application-submit-panel');
+  if (startGate) startGate.hidden = !signedIn || Boolean(activeApplication);
+  if (lockedNotice) lockedNotice.hidden = !signedIn || !activeApplication || canPrepare;
+  if (form) form.hidden = !signedIn || !canPrepare;
+  if (submitPanel) submitPanel.hidden = !signedIn || !canPrepare;
+  const amountBack = document.querySelector('.documents-back');
+  if (amountBack) amountBack.hidden = Boolean(activeApplication && !canPrepare);
+  if (!canPrepare && signedIn) {
+    const statusCopy = {
+      submitted: ['Application submitted', 'Your application is with Buddy. Updates will appear in Activity.'],
+      under_review: ['Application in review', 'Buddy is reviewing your application. Check Activity for updates.'],
+      action_required: ['Action needed', 'Check Activity for Buddy’s request so your review can continue.'],
+      approved: ['Application approved', 'Buddy will share your offer and debit-order mandate for you to review.'],
+      declined: ['Application unsuccessful', 'Your application is closed. Contact Buddy if you need help.'],
+      disbursed: ['Funds sent', 'Your loan and repayment updates appear in Activity.'],
+      cancelled: ['Application closed', 'Contact Buddy if you need help with this application.']
+    }[activeApplication?.status] || ['Application update', 'Check Activity for your latest update.'];
+    const title = document.querySelector('#documents-locked-title');
+    const copy = document.querySelector('#documents-locked-copy');
+    if (title) title.textContent = statusCopy[0];
+    if (copy) copy.textContent = statusCopy[1];
+  }
+  updateApplicationSubmitButton();
+}
+function updateApplicationSubmitButton() {
+  if (!applicationSubmitButton) return;
+  const ready = Boolean(activeSession && activeApplication?.status === 'draft'
+    && requiredDocumentTypes.every(type => uploadedDocumentTypes.has(type)));
+  const canResubmit = activeApplication?.status === 'action_required'
+    && requiredDocumentTypes.every(type => uploadedDocumentTypes.has(type));
+  const canSubmit = ready || canResubmit;
+  applicationSubmitButton.disabled = !activeSession || !canSubmit;
+  applicationSubmitButton.firstChild.textContent = (activeApplication?.status === 'action_required' ? 'Resubmit for review ' : 'Submit application for review ');
+  if (applicationSubmitStatus && ['draft', 'action_required'].includes(activeApplication?.status)) {
+    const missing = requiredDocumentTypes.filter(type => !uploadedDocumentTypes.has(type)).length;
+    applicationSubmitStatus.textContent = canSubmit
+      ? activeApplication.status === 'action_required' ? 'Your requested updates are uploaded. Resubmit when you’re ready.' : 'All four document types are uploaded. Submit when you’re ready.'
+      : `Upload ${missing} more required document type${missing === 1 ? '' : 's'} to ${activeApplication.status === 'action_required' ? 'resubmit' : 'submit'}.`;
+  }
+}
 function updateDocumentUploadButton() {
-  if (documentUploadButton) documentUploadButton.disabled = !activeSession || !documentConsent?.checked || !documentInput?.files?.length;
+  if (documentUploadButton) documentUploadButton.disabled = !activeSession || !['draft', 'action_required'].includes(activeApplication?.status) || !documentConsent?.checked || !documentInput?.files?.length;
 }
 async function loadStudentDocuments() {
   if (!documentList || !activeSession || !window.BuddyAuth?.listDocuments) return;
@@ -271,6 +334,12 @@ async function loadStudentDocuments() {
       const type = file.name.match(/^([a-z_]+)-/)?.[1];
       if (documentLabels[type] && !latestByType.has(type)) latestByType.set(type, file.review?.review_status || 'status_unavailable');
     }
+    uploadedDocumentTypes = new Set(files
+      .filter(file => file.review?.application_id === activeApplication?.id)
+      .filter(file => ['pending', 'reviewing', 'accepted'].includes(file.review?.review_status))
+      .map(file => file.name.match(/^([a-z_]+)-/)?.[1])
+      .filter(type => documentLabels[type]));
+    updateApplicationSubmitButton();
     let acceptedCount = 0;
     document.querySelectorAll('[data-document-status]').forEach(badge => {
       const status = latestByType.get(badge.dataset.documentStatus) || 'missing';
@@ -451,6 +520,29 @@ documentForm?.addEventListener('submit', async event => {
     updateDocumentUploadButton();
   }
 });
+applicationSubmitButton?.addEventListener('click', async () => {
+  if (applicationSubmitButton.disabled) return;
+  applicationSubmitButton.disabled = true;
+  applicationSubmitStatus.textContent = 'Submitting your application…';
+  try {
+    const { data, error } = await window.BuddyAuth.submitApplication();
+    if (error) throw error;
+    activeApplication = Array.isArray(data) ? data[0] : data;
+    if (!activeApplication) throw new Error('No application was returned');
+    applicationSubmitStatus.textContent = 'Application submitted. Buddy will post your next update in Activity.';
+    await loadAccountWorkspace();
+    updateDocumentWorkflowVisibility();
+    navigate('activity');
+  } catch (error) {
+    const message = error?.code === '23514'
+      ? 'Please upload all four required document types for this application before submitting.'
+      : error?.code === '42883'
+        ? 'Application submission is not configured yet. Please contact Buddy Loans.'
+        : 'We couldn’t submit your application. Check your connection and try again.';
+    updateApplicationSubmitButton();
+    applicationSubmitStatus.textContent = message;
+  }
+});
 document.querySelector('#document-refresh-button')?.addEventListener('click', loadStudentDocuments);
 document.querySelector('#activity-refresh-button')?.addEventListener('click', loadAccountWorkspace);
 profileOpenButton.addEventListener('click', async () => {
@@ -550,6 +642,11 @@ document.querySelectorAll('[data-go]').forEach(button => button.addEventListener
 document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => {
   event.preventDefault();
   if (link.dataset.viewLink === 'application') {
+    const waitingOnBuddy = activeApplication && ['submitted', 'under_review', 'action_required', 'approved'].includes(activeApplication.status);
+    if (waitingOnBuddy) {
+      navigate('activity');
+      return;
+    }
     // Apply always opens the amount selector so students can revise a saved request.
     navigate('application', 2);
     return;
@@ -690,71 +787,37 @@ function renderStep(step) {
   activeStep = step;
   const nextButton = document.querySelector('#next-step');
   nextButton.dataset.finished = 'false';
-  document.querySelector('#application-status').classList.remove('completion-note');
-  document.querySelector('#application-status').textContent = 'Follow each step to complete your application.';
   document.querySelectorAll('[data-application-step]').forEach(panel => {
     panel.hidden = Number(panel.dataset.applicationStep) !== activeStep;
   });
-  document.querySelector('#step-label').textContent = steps[activeStep - 1];
-  document.querySelector('#step-count').textContent = `Step ${activeStep} of ${steps.length}`;
-  document.querySelector('#step-index').textContent = `0${activeStep} / 0${steps.length}`;
-  document.querySelector('#step-description').textContent = [
-    'Create an account with your university-issued email before you apply.',
-    'Choose the amount you need and see the proposed repayment estimate.',
-    'Prepare your ID, registration proof, residence proof and recent bank statements.',
-    'Review verified income, spending and existing commitments against the amount requested.',
-    'If eligible, read the complete offer, fees, total and repayment date before deciding.',
-    'A separate debit-order mandate must be reviewed and explicitly accepted before funds are released.',
-    'Funds can only be sent after approval, agreement and debit-order authorisation.'
-  ][activeStep - 1];
+  const amountStage = activeStep === 2;
+  document.querySelector('#step-label').textContent = amountStage ? 'Choose an amount' : 'Account access';
+  document.querySelector('#step-count').textContent = amountStage ? 'Step 1 of 3' : 'Account access';
+  document.querySelector('#step-index').textContent = amountStage ? '01 / 03' : 'ACCOUNT';
+  document.querySelector('#step-description').textContent = amountStage
+    ? 'Choose the amount you need. Next, upload your documents and submit your application for Buddy to review.'
+    : 'Sign in to your student account before continuing.';
   const heading = document.querySelector('#plan-title');
-  heading.replaceChildren(document.createTextNode(headings[activeStep - 1][0]));
+  heading.replaceChildren(document.createTextNode(amountStage ? 'Choose an ' : 'Create your '));
   const accent = document.createElement('em');
-  accent.textContent = headings[activeStep - 1][1];
+  accent.textContent = amountStage ? 'amount.' : 'student account.';
   heading.append(accent);
   const progressTrack = document.querySelector('.application-intro .progress-track');
-  progressTrack.setAttribute('aria-valuenow', String(activeStep));
-  progressTrack.setAttribute('aria-valuemax', String(steps.length));
-  progressTrack.setAttribute('aria-valuetext', `Step ${activeStep} of ${steps.length}`);
-  document.querySelector('#progress-fill').style.width = `${(activeStep / steps.length) * 100}%`;
-
-  document.querySelector('#back-step').disabled = activeStep === 1;
-  document.querySelector('#back-step').setAttribute('aria-label', activeStep === 1 ? 'Back to student space' : `Back to step ${activeStep - 1}`);
-  nextButton.innerHTML = [
-    'Continue to amount',
-    'Continue to documents',
-    'Continue to affordability',
-    'Review your offer',
-    'Continue to debit order',
-    'See what happens next',
-    'Return to student space'
-  ][activeStep - 1] + ' <svg><use href="#i-arrow"/></svg>';
-  document.querySelector('#application-status').textContent = [
-    'Sign in with your SPU email to continue with your application.',
-    'Your rate depends on whether a Buddy loan was disbursed to you earlier this calendar year.',
-    'Upload documents from the Documents page. Files stay in private storage and are not scanned or assessed here.',
-    'Your affordability review considers allowance, regular spending and existing repayment commitments.',
-    'Review the repayment total, fees and due date before you decide.',
-    'A debit-order mandate requires your separate, explicit authorisation.',
-    'Funds are sent after approval, agreement acceptance and debit-order authorisation.'
-  ][activeStep - 1];
+  progressTrack.setAttribute('aria-valuenow', amountStage ? '1' : '0');
+  progressTrack.setAttribute('aria-valuemax', '3');
+  progressTrack.setAttribute('aria-valuetext', amountStage ? 'Step 1 of 3' : 'Account access');
+  document.querySelector('#progress-fill').style.width = amountStage ? '33.333%' : '0%';
+  document.querySelector('#back-step').disabled = false;
+  document.querySelector('#back-step').setAttribute('aria-label', 'Back to student space');
+  nextButton.innerHTML = (amountStage ? 'Continue to documents' : 'Open account access') + ' <svg><use href="#i-arrow"/></svg>';
+  const appStatus = document.querySelector('#application-status');
+  appStatus.classList.remove('completion-note');
+  appStatus.textContent = amountStage
+    ? 'Your amount is saved when you continue. You can return here from Docs to change it.'
+    : 'Sign in with your SPU email to continue with your application.';
 }
 
-document.querySelector('#back-step').addEventListener('click', () => {
-  if (activeStep > 1) {
-    const previousStep = activeStep - 1;
-    if (activeApplication?.status === 'draft' && previousStep >= 2) {
-      const backButton = document.querySelector('#back-step');
-      backButton.disabled = true;
-      persistApplicationProgress(previousStep).then(() => navigate('application', previousStep)).catch(() => {
-        document.querySelector('#application-status').textContent = 'We couldn’t save your progress. Check your connection and try again.';
-      }).finally(() => { backButton.disabled = false; });
-      return;
-    }
-    navigate('application', previousStep);
-  }
-  else navigate('overview');
-});
+document.querySelector('#back-step').addEventListener('click', () => navigate('overview'));
 function sendToAccount(returnStep = 2) {
   const target = new URL('index.html', window.location.href);
   target.searchParams.set('open', 'account');
@@ -785,34 +848,28 @@ document.querySelector('#next-step').addEventListener('click', async () => {
       sendToAccount(2);
       return;
     }
+    navigate('application', 2);
+    return;
   }
   if (next.dataset.finished === 'true') {
     navigate('overview');
-  } else if (activeStep === 2 && activeApplication && ['submitted', 'under_review', 'action_required', 'approved'].includes(activeApplication.status)) {
-    navigate('activity');
-  } else if (activeStep < steps.length) {
-    const nextStep = activeStep + 1;
-    if (activeStep >= 2) {
-      next.disabled = true;
-      status.textContent = 'Saving your progress…';
-      try {
-        await persistApplicationProgress(nextStep);
-      } catch {
-        status.textContent = 'We couldn’t save your application progress. Refresh your account setup and try again.';
-        next.disabled = false;
-        return;
-      }
-      next.disabled = false;
-    }
-    // Step 3 is the actual secure upload workspace. Take students there
-    // directly instead of making them pass through the informational panel.
-    navigate(nextStep === 3 ? 'prepare' : 'application', nextStep);
-  } else {
-    status.textContent = 'You’ve reached the final step. Return to your account to review your details and documents.';
-    status.classList.add('completion-note');
-    next.textContent = 'Return to student space';
-    next.dataset.finished = 'true';
+    return;
   }
+  if (activeApplication && activeApplication.status !== 'draft') {
+    navigate('activity');
+    return;
+  }
+  next.disabled = true;
+  status.textContent = 'Saving your amount…';
+  try {
+    await persistApplicationProgress(3);
+  } catch {
+    status.textContent = 'We couldn’t save your amount. Check your connection and try again.';
+    next.disabled = false;
+    return;
+  }
+  next.disabled = false;
+  navigate('prepare');
 });
 
 renderRoute();

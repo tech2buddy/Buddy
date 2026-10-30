@@ -549,13 +549,12 @@ document.querySelectorAll('[data-go]').forEach(button => button.addEventListener
 }));
 document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => {
   event.preventDefault();
-  if (link.dataset.viewLink === 'application' && activeApplication?.status === 'draft' && Number(activeApplication.current_step) === 3) {
-    navigate('prepare');
+  if (link.dataset.viewLink === 'application') {
+    // Apply always opens the amount selector so students can revise a saved request.
+    navigate('application', 2);
     return;
   }
-  navigate(link.dataset.viewLink, link.dataset.viewLink === 'application'
-    ? activeApplication?.status === 'draft' ? Number(activeApplication.current_step) : 2
-    : 1);
+  navigate(link.dataset.viewLink);
 }));
 window.addEventListener('hashchange', () => renderRoute({ focus: true, scroll: true }));
 window.addEventListener('popstate', () => renderRoute({ focus: true, scroll: true }));

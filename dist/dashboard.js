@@ -96,16 +96,38 @@ window.addEventListener('buddy-auth-state', event => {
   }
 });
 profileOpenButton.addEventListener('click', async () => {
-  if (!activeProfile && window.BuddyAuth?.getProfile) {
-    const { data, error } = await window.BuddyAuth.getProfile();
-    if (error || !data) return;
-    window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile: { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() } } }));
-  }
-  const { data: userResult } = await window.BuddyAuth.getUser();
-  document.querySelector('#profile-university-email').textContent = userResult?.user?.email || 'Student email unavailable';
-  fillProfileSettings(activeProfile);
+  // Open synchronously inside the tap. Mobile Safari can discard the user
+  // gesture after an async Supabase request, preventing showModal() from opening.
   showProfileSettingsTab('details');
-  profileDialog.showModal();
+  if (!profileDialog.open) profileDialog.showModal();
+  const wasMissingProfile = !activeProfile;
+  profileEditMessage.hidden = true;
+  if (wasMissingProfile) {
+    profileEditMessage.textContent = 'Loading your profile…';
+    profileEditMessage.hidden = false;
+  } else {
+    fillProfileSettings(activeProfile);
+  }
+
+  try {
+    if (!activeProfile && window.BuddyAuth?.getProfile) {
+      const { data, error } = await window.BuddyAuth.getProfile();
+      if (error) throw error;
+      if (!data) throw new Error('Profile not found');
+      const profile = { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() };
+      window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile } }));
+    }
+    const { data: userResult, error: userError } = await window.BuddyAuth.getUser();
+    if (userError) throw userError;
+    document.querySelector('#profile-university-email').textContent = userResult?.user?.email || 'Student email unavailable';
+    if (activeProfile) fillProfileSettings(activeProfile);
+    profileEditMessage.hidden = true;
+  } catch {
+    profileEditMessage.textContent = activeProfile
+      ? 'Your profile opened, but some account details could not be refreshed.'
+      : 'We couldn’t load your profile. Check your connection and try again.';
+    profileEditMessage.hidden = false;
+  }
 });
 profileDialog.querySelector('.profile-settings-close').addEventListener('click', () => profileDialog.close());
 profileDetailsTab.addEventListener('click', () => showProfileSettingsTab('details'));

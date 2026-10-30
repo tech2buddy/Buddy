@@ -22,11 +22,12 @@
   <link rel="stylesheet" href="dashboard-documents.css?v=doc-review-status-1">
   <link rel="stylesheet" href="dashboard-interactions.css?v=loan-journey-2">
   <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-2">
+  <link rel="stylesheet" href="dashboard-activity-live.css?v=activity-live-2">
   <link rel="stylesheet" href="dashboard-mobile.css?v=profile-settings-1">
   <link rel="stylesheet" href="account-flow.css?v=profile-settings-3">
-  <script src="dashboard.js?v=account-loan-history-1" defer></script>
+  <script src="dashboard.js?v=account-activity-2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="account-auth.js?v=loan-history-1" defer></script>
+  <script src="account-auth.js?v=account-activity-2" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#dashboard-main">Skip to dashboard</a>
@@ -70,18 +71,18 @@
         <section class="view" id="overview" data-view="overview" aria-labelledby="overview-title">
           <div class="page-intro account-intro"><div><span class="section-kicker"><span class="signal-dot"></span> YOUR BUDDY ACCOUNT</span><h1 id="overview-title">Account overview</h1><p>Your status, next steps and updates in one place.</p></div><span class="page-index">STUDENT SPACE</span></div>
           <section class="account-snapshot" aria-label="Your Buddy account summary">
-            <div class="snapshot-heading"><div><span class="snapshot-kicker">YOUR LOAN ACCOUNT</span><h2>No active loan</h2><p>When your account is ready, this is where your current loan and its progress will appear.</p></div><span class="snapshot-status"><i></i> Student account</span></div>
+            <div class="snapshot-heading"><div><span class="snapshot-kicker">YOUR LOAN ACCOUNT</span><h2 id="overview-loan-title">No active loan</h2><p id="overview-loan-description">Your current loan and its progress will appear here after a loan is disbursed.</p></div><span class="snapshot-status"><i></i> Student account</span></div>
             <div class="snapshot-metrics">
-              <article><span>Application</span><strong>Not started</strong><small>Choose an amount to get started</small></article>
+              <article><span>Application</span><strong id="overview-application-status">Not started</strong><small id="overview-application-hint">Choose an amount to get started</small></article>
               <article><span>Next repayment</span><strong>None scheduled</strong><small>No payment is due</small></article>
               <article><span>Amount you could request</span><strong>Up to R700</strong><small>Subject to assessment; not an approved limit</small></article>
             </div>
             <div class="snapshot-foot"><svg><use href="#i-shield"/></svg><span>We’ll show your exact amount, costs and verified repayment date before you decide to accept a loan.</span></div>
           </section>
           <div class="overview-lower">
-            <section class="account-activity-card" aria-labelledby="recent-activity-title"><div class="account-section-heading"><div><span class="section-kicker">ACCOUNT ACTIVITY</span><h2 id="recent-activity-title">Recent updates</h2></div><a href="#activity" data-view-link="activity">All activity <svg><use href="#i-arrow"/></svg></a></div><div class="activity-empty"><span class="activity-empty-icon"><svg><use href="#i-activity"/></svg></span><div><strong>No updates yet</strong><p>Your application progress, loan activity and repayment reminders will appear here.</p></div></div></section>
+            <section class="account-activity-card" aria-labelledby="recent-activity-title"><div class="account-section-heading"><div><span class="section-kicker">ACCOUNT ACTIVITY</span><h2 id="recent-activity-title">Recent updates</h2></div><a href="#activity" data-view-link="activity">All activity <svg><use href="#i-arrow"/></svg></a></div><p class="activity-feed-empty" id="overview-activity-empty">Your document and application updates will appear here.</p><ol class="activity-feed activity-feed-compact" id="overview-activity-feed" aria-live="polite"></ol></section>
           </div>
-          <section class="overview-apply-card" aria-labelledby="overview-apply-title"><div class="overview-apply-copy"><span class="section-kicker"><span class="signal-dot"></span> YOUR NEXT STEP</span><h2 id="overview-apply-title">Start your application.</h2><p>Choose an amount, prepare your documents and follow each step.</p></div><button type="button" data-go="application" data-step-go="2">Start application <svg><use href="#i-arrow"/></svg></button><small>Begin with your requested amount, then review the documents you’ll need.</small></section>
+          <section class="overview-apply-card" aria-labelledby="overview-apply-title"><div class="overview-apply-copy"><span class="section-kicker"><span class="signal-dot"></span> YOUR NEXT STEP</span><h2 id="overview-apply-title">Start your application.</h2><p>Choose an amount, prepare your documents and follow each step.</p></div><button type="button" data-go="application" data-step-go="2" id="overview-application-button">Start application <svg><use href="#i-arrow"/></svg></button><small id="overview-application-cta-note">Begin with your requested amount, then review the documents you’ll need.</small></section>
         </section>
 
         <section class="view" id="application" data-view="application" aria-labelledby="plan-title" hidden>
@@ -131,8 +132,8 @@
         </section>
 
         <section class="view" id="activity" data-view="activity" aria-labelledby="activity-title" hidden>
-          <div class="page-intro"><div><span class="section-kicker"><span class="signal-dot"></span> YOUR ACTIVITY</span><h1 id="activity-title">Clarity at<br><em>every step.</em></h1><p>Application updates, loan details, and repayment dates stay together in one place.</p></div><span class="page-index">04 / 04</span></div>
-          <div class="activity-grid"><article class="empty-card"><div class="empty-visual" aria-hidden="true"><div class="empty-orbit"></div><div class="empty-page"><span></span><span></span><span></span><i>✳</i></div><div class="empty-spark">✦</div></div><span class="section-kicker">YOUR ACCOUNT ACTIVITY</span><h2>Your activity will appear here.</h2><p>Application updates, loan details and repayment dates will stay together in one place.</p><button type="button" data-go="application">Start your application <svg><use href="#i-arrow"/></svg></button></article><article class="future-card"><div><span class="section-kicker">YOUR LOAN DETAILS</span><h2>Updates with<br>the details that matter.</h2><p>Follow each application stage and see your agreement, quote and repayment schedule in one place.</p></div><div class="future-list"><div><span class="future-icon">01</span><span><strong>Application progress</strong><small>Clear, dated status updates</small></span></div><div><span class="future-icon">02</span><span><strong>Your quote and agreement</strong><small>Costs before commitment</small></span></div><div><span class="future-icon">03</span><span><strong>Repayment details</strong><small>What is due and when</small></span></div></div></article></div>
+          <div class="page-intro"><div><span class="section-kicker"><span class="signal-dot"></span> YOUR ACTIVITY</span><h1 id="activity-title">Clarity at<br><em>every step.</em></h1><p>Track saved application progress, document decisions and loan activity in one account.</p></div><span class="page-index">04 / 04</span></div>
+          <div class="activity-grid"><article class="empty-card activity-feed-card"><div class="activity-feed-heading"><div><span class="section-kicker">YOUR ACCOUNT ACTIVITY</span><h2>Recent updates</h2></div><button type="button" id="activity-refresh-button">Refresh</button></div><p id="activity-load-status" class="activity-load-status" role="status" aria-live="polite"></p><ol class="activity-feed" id="activity-feed" aria-live="polite"></ol><div class="activity-no-events" id="activity-empty-state" hidden><span class="activity-empty-icon"><svg><use href="#i-activity"/></svg></span><div><strong>No updates yet</strong><p>When you upload a document or continue an application, its progress will appear here.</p></div><button type="button" data-go="application" data-step-go="2">Start an application <svg><use href="#i-arrow"/></svg></button></div></article><article class="future-card activity-account-card"><div><span class="section-kicker">CURRENT APPLICATION</span><h2 id="activity-application-title">No application in progress</h2><p id="activity-application-description">Start an application to keep your requested amount, documents and progress together.</p></div><div class="future-list"><div><span class="future-icon">01</span><span><strong>Application status</strong><small id="activity-application-status">Not started</small></span></div><div><span class="future-icon">02</span><span><strong>Requested amount</strong><small id="activity-application-amount">Not selected</small></span></div><div><span class="future-icon">03</span><span><strong>Documents</strong><small id="activity-document-count">Sign in to view your uploads</small></span></div></div><button class="activity-continue-button" type="button" data-go="application" data-step-go="2" id="activity-continue-button">Start application <svg><use href="#i-arrow"/></svg></button></article></div>
         </section>
       </main>
       <footer class="dashboard-footer"><span>Buddy Loans · Student space</span><span>Your student loan journey, in one place.</span><a href="index.html">Back to website ↗</a></footer>

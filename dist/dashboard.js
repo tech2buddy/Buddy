@@ -30,6 +30,7 @@ function renderRoute({ focus = false, scroll = false } = {}) {
   document.title = `${sectionNames[activeSection]} — Buddy Loans`;
   if (activeSection === 'application') renderStep(route.step);
   if (activeSection === 'prepare' && activeSession) loadStudentDocuments();
+  if ((activeSection === 'overview' || activeSection === 'activity') && activeSession) loadAccountWorkspace();
   if (focus) document.querySelector('#dashboard-main').focus({ preventScroll: true });
   if (scroll) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -48,7 +49,11 @@ function navigate(section, step = 1) {
 
 let activeProfile = null;
 let activeSession = null;
+let activeApplication = null;
 let authReady = false;
+let activityUnsubscribe = null;
+let activityWatchRequest = 0;
+let activityReloadTimer = 0;
 const documentLabels = { south_african_id: 'South African ID', proof_of_registration: 'Proof of registration', proof_of_residence: 'Proof of residence', bank_statements: 'Three months of bank statements' };
 const reviewStatusLabels = { pending: 'Pending review', reviewing: 'In review', accepted: 'Accepted', action_required: 'Action needed' };
 const documentForm = document.querySelector('#document-upload-form');
@@ -57,6 +62,171 @@ const documentConsent = document.querySelector('#document-consent');
 const documentUploadButton = document.querySelector('#document-upload-button');
 const documentStatus = document.querySelector('#document-upload-status');
 const documentList = document.querySelector('#document-list');
+let accountWorkspaceRequest = 0;
+const activityEventTitles = {
+  application_started: 'Application started',
+  application_progressed: 'Application progress saved',
+  application_status_changed: 'Application status updated',
+  application_amount_changed: 'Requested amount updated',
+  document_uploaded: 'Document uploaded',
+  document_reviewed: 'Document review updated',
+  document_removed: 'Document removed',
+  loan_disbursed: 'Loan disbursed'
+};
+function displayActivityDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Date unavailable';
+  return new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+}
+function renderActivityFeed(events, listId, emptyId, limit = 50) {
+  const list = document.getElementById(listId);
+  const empty = document.getElementById(emptyId);
+  if (!list || !empty) return;
+  list.replaceChildren();
+  const rows = (events || []).slice(0, limit);
+  empty.hidden = rows.length > 0;
+  for (const event of rows) {
+    const item = document.createElement('li'); item.className = 'activity-feed-entry';
+    const marker = document.createElement('span'); marker.className = 'activity-feed-marker'; marker.setAttribute('aria-hidden', 'true');
+    const copy = document.createElement('div'); copy.className = 'activity-feed-copy';
+    const title = document.createElement('strong'); title.textContent = event.title || activityEventTitles[event.event_type] || 'Account update';
+    const date = document.createElement('time'); date.dateTime = event.created_at || ''; date.textContent = displayActivityDate(event.created_at);
+    const detail = document.createElement('p'); detail.textContent = event.detail || '';
+    copy.append(title, date, detail); item.append(marker, copy); list.append(item);
+  }
+}
+function updateApplicationSummary(application, documentCount = null) {
+  const statusLabels = { draft: 'In progress', submitted: 'Submitted', under_review: 'In review', action_required: 'Action needed', approved: 'Approved', disbursed: 'Funds sent', declined: 'Decision complete', cancelled: 'Cancelled' };
+  const status = application ? (statusLabels[application.status] || 'In progress') : 'Not started';
+  const hint = application ? `Step ${application.current_step} of 7 · last saved ${displayActivityDate(application.updated_at)}` : 'Choose an amount to get started';
+  const set = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value; };
+  set('#overview-application-status', status);
+  set('#overview-application-hint', hint);
+  set('#activity-application-title', application ? `Application ${status.toLowerCase()}` : 'No application in progress');
+  set('#activity-application-description', application ? 'Your saved application stays connected to your documents and account updates.' : 'Start an application to keep your requested amount, documents and progress together.');
+  set('#activity-application-status', status);
+  set('#activity-application-amount', application ? `R${application.requested_amount}` : 'Not selected');
+  set('#activity-document-count', documentCount === null ? (activeSession ? 'Unable to load uploads' : 'Sign in to view your uploads') : `${documentCount} document${documentCount === 1 ? '' : 's'} uploaded`);
+  const hasDraft = application?.status === 'draft';
+  const awaitingUpdate = application && ['submitted', 'under_review', 'action_required', 'approved'].includes(application.status);
+  const nextStep = hasDraft ? Number(application.current_step) : 2;
+  for (const selector of ['#overview-application-button', '#activity-continue-button', '#activity-empty-state button']) {
+    const button = document.querySelector(selector);
+    if (!button) continue;
+    button.dataset.go = awaitingUpdate ? 'activity' : 'application';
+    button.dataset.stepGo = String(nextStep);
+    const text = hasDraft ? 'Continue application' : awaitingUpdate ? 'View updates' : application ? 'Start another application' : 'Start application';
+    button.firstChild.textContent = text + ' ';
+  }
+  set('#overview-apply-title', hasDraft ? 'Continue where you left off.' : awaitingUpdate ? 'Your application is moving forward.' : 'Start your application.');
+  set('#overview-application-cta-note', hasDraft ? `Your R${application.requested_amount} request is saved to your account.` : awaitingUpdate ? 'See your latest application and document updates.' : application ? 'Start a new request when you’re ready.' : 'Begin with your requested amount, then review the documents you’ll need.');
+}
+async function loadAccountWorkspace() {
+  const request = ++accountWorkspaceRequest;
+  const activityStatus = document.querySelector('#activity-load-status');
+  const loanTitle = document.querySelector('#overview-loan-title');
+  const loanDescription = document.querySelector('#overview-loan-description');
+  if (loanTitle) loanTitle.textContent = activeSession ? 'Checking loan history…' : 'No active loan';
+  if (loanDescription) loanDescription.textContent = activeSession ? 'Checking for a Buddy loan disbursed to your account.' : 'Your current loan and its progress will appear here after a loan is disbursed.';
+  if (!activeSession || !window.BuddyAuth?.getActivityEvents) {
+    if (activityStatus) activityStatus.textContent = 'Sign in to see your account updates.';
+    renderActivityFeed([], 'activity-feed', 'activity-empty-state');
+    renderActivityFeed([], 'overview-activity-feed', 'overview-activity-empty', 3);
+    updateApplicationSummary(null, null);
+    return;
+  }
+  if (activityStatus) activityStatus.textContent = 'Loading your account updates…';
+  let applicationResult, activityResult, documentResult, loanResult;
+  try {
+    [applicationResult, activityResult, documentResult, loanResult] = await Promise.all([
+      window.BuddyAuth.getCurrentApplication(),
+      window.BuddyAuth.getActivityEvents(),
+      window.BuddyAuth.listDocuments(),
+      window.BuddyAuth.getLoanHistory()
+    ]);
+  } catch {
+    if (request !== accountWorkspaceRequest) return;
+    if (activityStatus) activityStatus.textContent = 'We couldn’t load your updates. Check your connection and refresh.';
+    if (loanTitle) loanTitle.textContent = 'Loan history unavailable';
+    if (loanDescription) loanDescription.textContent = 'We couldn’t check your disbursement history right now.';
+    return;
+  }
+  if (request !== accountWorkspaceRequest) return;
+  activeApplication = applicationResult.error ? null : applicationResult.data;
+  if (activeApplication?.status === 'draft' && Number(amountRange?.value) !== activeApplication.requested_amount) {
+    amountRange.value = String(activeApplication.requested_amount);
+    amountRange.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  const uploadedDocuments = documentResult.error ? null : (documentResult.data || []).filter(file => file.name && !file.name.startsWith('.')).length;
+  updateApplicationSummary(activeApplication, uploadedDocuments);
+  if (applicationResult.error) {
+    const appStatus = document.querySelector('#overview-application-status');
+    const appHint = document.querySelector('#overview-application-hint');
+    const appTitle = document.querySelector('#activity-application-title');
+    const appDescription = document.querySelector('#activity-application-description');
+    if (appStatus) appStatus.textContent = 'Unavailable';
+    if (appHint) appHint.textContent = 'Refresh to check your saved progress';
+    if (appTitle) appTitle.textContent = 'Couldn’t load application';
+    if (appDescription) appDescription.textContent = 'We couldn’t check your saved application right now.';
+  }
+  const events = activityResult.error ? [] : activityResult.data || [];
+  renderActivityFeed(events, 'activity-feed', 'activity-empty-state');
+  renderActivityFeed(events, 'overview-activity-feed', 'overview-activity-empty', 3);
+  if (activityResult.error) {
+    const activityEmpty = document.querySelector('#activity-empty-state');
+    const overviewEmpty = document.querySelector('#overview-activity-empty');
+    if (activityEmpty) activityEmpty.hidden = true;
+    if (overviewEmpty) {
+      overviewEmpty.hidden = false;
+      overviewEmpty.textContent = 'We couldn’t load your updates right now.';
+    }
+  } else if (!events.length) {
+    const overviewEmpty = document.querySelector('#overview-activity-empty');
+    if (overviewEmpty) overviewEmpty.textContent = 'Your document and application updates will appear here.';
+  }
+  if (activityStatus) {
+    if (activityResult.error) activityStatus.textContent = ['42P01', 'PGRST205'].includes(activityResult.error.code)
+      ? 'Your account updates aren’t available yet. Please try again later.'
+      : 'We couldn’t load your updates. Check your connection and refresh.';
+    else activityStatus.textContent = events.length ? `${events.length} recent account update${events.length === 1 ? '' : 's'}` : '';
+  }
+  if (loanResult.error) {
+    if (loanTitle) loanTitle.textContent = 'Loan history unavailable';
+    if (loanDescription) loanDescription.textContent = 'We couldn’t check your disbursement history right now.';
+  } else if (loanResult.data?.length) {
+    const latest = loanResult.data[0];
+    if (loanTitle) loanTitle.textContent = 'Latest loan disbursed';
+    if (loanDescription) loanDescription.textContent = `${formatRand(latest.principal_amount)} disbursed ${displayActivityDate(latest.disbursed_at)}. Repayment details will appear when they’re recorded.`;
+  } else {
+    if (loanTitle) loanTitle.textContent = 'No active loan';
+    if (loanDescription) loanDescription.textContent = 'Your current loan and its progress will appear here after a loan is disbursed.';
+  }
+}
+async function connectActivityRealtime() {
+  const request = ++activityWatchRequest;
+  if (activityUnsubscribe) {
+    activityUnsubscribe();
+    activityUnsubscribe = null;
+  }
+  if (!activeSession || !window.BuddyAuth?.subscribeToActivity) return;
+  const userId = activeSession.user?.id;
+  let result;
+  try {
+    result = await window.BuddyAuth.subscribeToActivity(() => {
+      window.clearTimeout(activityReloadTimer);
+      activityReloadTimer = window.setTimeout(() => {
+        loadAccountWorkspace();
+        if (activeSection === 'prepare') loadStudentDocuments();
+      }, 120);
+    });
+  } catch { return; }
+  const { data, error } = result;
+  if (request !== activityWatchRequest || activeSession?.user?.id !== userId) {
+    data?.unsubscribe?.();
+    return;
+  }
+  if (!error && data?.unsubscribe) activityUnsubscribe = data.unsubscribe;
+}
 function updateDocumentsAccess() {
   const signedIn = Boolean(activeSession);
   const gate = document.querySelector('#documents-signin-gate');
@@ -132,7 +302,7 @@ async function loadStudentDocuments() {
       const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.addEventListener('click', async () => {
         if (!window.confirm(`Remove your ${documentLabels[type].toLowerCase()} from secure uploads?`)) return;
         remove.disabled = true;
-        try { const result = await window.BuddyAuth.deleteDocument(`${activeSession.user.id}/${file.name}`); if (result.error) throw result.error; documentStatus.textContent = 'Document removed.'; await loadStudentDocuments(); }
+        try { const result = await window.BuddyAuth.deleteDocument(`${activeSession.user.id}/${file.name}`); if (result.error) throw result.error; documentStatus.textContent = 'Document removed.'; await loadStudentDocuments(); await loadAccountWorkspace(); }
         catch { remove.disabled = false; documentStatus.textContent = 'We couldn’t remove that file. Please try again.'; }
       });
       actions.append(download, remove); row.append(description, actions); documentList.append(row);
@@ -195,6 +365,8 @@ window.addEventListener('buddy-auth-ready', async event => {
   activeSession = event.detail?.session || null;
   updateProfileControl();
   updateDocumentsAccess();
+  loadAccountWorkspace();
+  connectActivityRealtime();
   if (activeSession && window.BuddyAuth?.getLoanHistory) refreshLoanHistory();
   else window.BuddyLoansDashboard?.setAccountContext({ authenticated: false });
   if (!activeSession || !window.BuddyAuth?.getProfile) return;
@@ -210,13 +382,20 @@ window.addEventListener('buddy-auth-state', event => {
     authReady = true;
     updateProfileControl();
     updateDocumentsAccess();
+    activityUnsubscribe?.();
+    activityUnsubscribe = null;
+    activityWatchRequest++;
     window.BuddyLoansDashboard?.setAccountContext({ authenticated: false });
+    activeApplication = null;
+    loadAccountWorkspace();
     if (profileDialog.open) profileDialog.close();
   } else if (event.detail?.session) {
     activeSession = event.detail.session;
     authReady = true;
     updateProfileControl();
     updateDocumentsAccess();
+    loadAccountWorkspace();
+    connectActivityRealtime();
     if (window.BuddyAuth?.getLoanHistory) refreshLoanHistory();
   }
 });
@@ -244,12 +423,13 @@ documentForm?.addEventListener('submit', async event => {
   documentUploadButton.textContent = 'Uploading…';
   documentStatus.textContent = '';
   try {
-    const { error } = await window.BuddyAuth.uploadDocument(document.querySelector('#document-type').value, file);
+    const { error } = await window.BuddyAuth.uploadDocument(document.querySelector('#document-type').value, file, activeApplication?.id || null);
     if (error) throw error;
     documentForm.reset();
     document.querySelector('#document-file-label').textContent = 'Choose a file';
     documentStatus.textContent = 'Uploaded securely to your account.';
     await loadStudentDocuments();
+    await loadAccountWorkspace();
   } catch (error) {
     documentStatus.textContent = error?.message?.includes('10 MB') ? error.message
       : ['42P01', 'PGRST205'].includes(error?.code) ? 'Status tracking isn’t configured yet, so the document was not kept. Ask the Buddy Loans team to run the review-status SQL migration.'
@@ -262,6 +442,7 @@ documentForm?.addEventListener('submit', async event => {
   }
 });
 document.querySelector('#document-refresh-button')?.addEventListener('click', loadStudentDocuments);
+document.querySelector('#activity-refresh-button')?.addEventListener('click', loadAccountWorkspace);
 profileOpenButton.addEventListener('click', async () => {
   if (!authReady || !activeSession) {
     if (!accountDialog.open) accountDialog.showModal();
@@ -358,7 +539,9 @@ document.querySelectorAll('[data-go]').forEach(button => button.addEventListener
 }));
 document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => {
   event.preventDefault();
-  navigate(link.dataset.viewLink, link.dataset.viewLink === 'application' ? 2 : 1);
+  navigate(link.dataset.viewLink, link.dataset.viewLink === 'application'
+    ? activeApplication?.status === 'draft' ? Number(activeApplication.current_step) : 2
+    : 1);
 }));
 window.addEventListener('hashchange', () => renderRoute({ focus: true, scroll: true }));
 window.addEventListener('popstate', () => renderRoute({ focus: true, scroll: true }));
@@ -399,9 +582,11 @@ function updateEstimate(amount) {
   const legal = document.querySelector('#pricing-legal');
   const total = document.querySelector('#estimate-total');
   if (!currentLoanHistory) {
-    label.textContent = loanHistoryState === 'signed-out' ? 'SIGN IN REQUIRED' : loanHistoryState === 'error' ? 'HISTORY UNAVAILABLE' : 'CHECKING ACCOUNT';
+    label.textContent = loanHistoryState === 'signed-out' ? 'SIGN IN REQUIRED' : loanHistoryState === 'error' || loanHistoryState === 'setup' ? 'HISTORY UNAVAILABLE' : 'CHECKING ACCOUNT';
     document.querySelector('#estimate-caption').textContent = loanHistoryState === 'error'
       ? 'We couldn’t load your loan history'
+      : loanHistoryState === 'setup'
+        ? 'We couldn’t verify prior loans'
       : loanHistoryState === 'signed-out'
         ? 'Sign in to see your repayment estimate'
         : 'Checking your Buddy loan history';
@@ -411,6 +596,8 @@ function updateEstimate(amount) {
     note.hidden = false;
     note.textContent = loanHistoryState === 'error'
       ? 'Your estimate is temporarily unavailable. Please refresh this page and try again.'
+      : loanHistoryState === 'setup'
+        ? 'We can’t show an interest rate or repayment total until your Buddy loan history can be checked. Please try again later.'
       : loanHistoryState === 'signed-out'
         ? 'Sign in to check whether this is your first Buddy loan this calendar year and see the matching estimate.'
         : 'We’re checking whether a Buddy loan was disbursed to you earlier this calendar year.';
@@ -440,7 +627,7 @@ async function refreshLoanHistory() {
     const { data, error } = await window.BuddyAuth.getLoanHistory();
     if (request !== loanHistoryRequest) return;
     if (error || !Array.isArray(data)) {
-      loanHistoryState = 'error';
+      loanHistoryState = ['42P01', 'PGRST205', '42703', 'PGRST204'].includes(error?.code) ? 'setup' : 'error';
       updateEstimate(Number(amountRange.value));
       return;
     }
@@ -475,6 +662,17 @@ const savedAmount = Number(sessionStorage.getItem(amountStorageKey));
 if (savedAmount >= 100 && savedAmount <= 700) amountRange.value = String(Math.round(savedAmount / 100) * 100);
 amountRange.addEventListener('input', updateAmount);
 updateAmount();
+async function persistApplicationProgress(nextStep) {
+  if (!activeSession || !window.BuddyAuth?.saveDraftApplication) throw new Error('Sign in to save your application.');
+  const { data, error } = await window.BuddyAuth.saveDraftApplication(
+    activeApplication?.status === 'draft' ? activeApplication.id : null,
+    Number(amountRange.value),
+    nextStep
+  );
+  if (error || !data) throw error || new Error('Your application was not saved.');
+  activeApplication = data;
+  await loadAccountWorkspace();
+}
 function renderStep(step) {
   activeStep = step;
   const nextButton = document.querySelector('#next-step');
@@ -530,7 +728,18 @@ function renderStep(step) {
 }
 
 document.querySelector('#back-step').addEventListener('click', () => {
-  if (activeStep > 1) navigate('application', activeStep - 1);
+  if (activeStep > 1) {
+    const previousStep = activeStep - 1;
+    if (activeApplication?.status === 'draft' && previousStep >= 2) {
+      const backButton = document.querySelector('#back-step');
+      backButton.disabled = true;
+      persistApplicationProgress(previousStep).then(() => navigate('application', previousStep)).catch(() => {
+        document.querySelector('#application-status').textContent = 'We couldn’t save your progress. Check your connection and try again.';
+      }).finally(() => { backButton.disabled = false; });
+      return;
+    }
+    navigate('application', previousStep);
+  }
   else navigate('overview');
 });
 function sendToAccount(returnStep = 2) {
@@ -566,8 +775,23 @@ document.querySelector('#next-step').addEventListener('click', async () => {
   }
   if (next.dataset.finished === 'true') {
     navigate('overview');
+  } else if (activeStep === 2 && activeApplication && ['submitted', 'under_review', 'action_required', 'approved'].includes(activeApplication.status)) {
+    navigate('activity');
   } else if (activeStep < steps.length) {
-    navigate('application', activeStep + 1);
+    const nextStep = activeStep + 1;
+    if (activeStep >= 2) {
+      next.disabled = true;
+      status.textContent = 'Saving your progress…';
+      try {
+        await persistApplicationProgress(nextStep);
+      } catch {
+        status.textContent = 'We couldn’t save your application progress. Refresh your account setup and try again.';
+        next.disabled = false;
+        return;
+      }
+      next.disabled = false;
+    }
+    navigate('application', nextStep);
   } else {
     status.textContent = 'You’ve reached the final step. Return to your account to review your details and documents.';
     status.classList.add('completion-note');

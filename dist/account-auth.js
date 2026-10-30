@@ -62,9 +62,55 @@
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
       return client.from('buddy_loan_disbursements')
-        .select('disbursed_at')
+        .select('principal_amount,disbursed_at')
         .eq('user_id', user.id)
         .order('disbursed_at', { ascending: false });
+    },
+    async getCurrentApplication() {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      return client.from('student_loan_applications')
+        .select('id,requested_amount,current_step,status,created_at,updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    },
+    async saveDraftApplication(applicationId, requestedAmount, currentStep) {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      const values = { requested_amount: requestedAmount, current_step: currentStep };
+      if (applicationId) {
+        return client.from('student_loan_applications').update(values)
+          .eq('id', applicationId).eq('user_id', user.id).eq('status', 'draft')
+          .select('id,requested_amount,current_step,status,created_at,updated_at').maybeSingle();
+      }
+      const { data: existing, error: lookupError } = await client.from('student_loan_applications')
+        .select('id').eq('user_id', user.id).eq('status', 'draft')
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      if (lookupError) return { data: null, error: lookupError };
+      if (existing?.id) {
+        return client.from('student_loan_applications').update(values)
+          .eq('id', existing.id).eq('user_id', user.id).eq('status', 'draft')
+          .select('id,requested_amount,current_step,status,created_at,updated_at').maybeSingle();
+      }
+      return client.from('student_loan_applications').insert({ ...values, user_id: user.id })
+        .select('id,requested_amount,current_step,status,created_at,updated_at').single();
+    },
+    async getActivityEvents() {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      return client.from('student_activity_events')
+        .select('id,event_type,title,detail,created_at,application_id')
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(50);
+    },
+    async subscribeToActivity(onUpdate) {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      const channel = client.channel(`buddy-activity-${user.id}-${crypto.randomUUID()}`)
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'student_activity_events', filter: `user_id=eq.${user.id}`
+        }, onUpdate)
+        .subscribe();
+      return { data: { unsubscribe: () => client.removeChannel(channel) }, error: null };
     },
     async updateProfile(changes) {
       const { data: { user }, error: authError } = await client.auth.getUser();
@@ -83,7 +129,7 @@
       const reviewByPath = new Map((reviews || []).map(review => [review.object_path, review]));
       return { data: (files || []).map(file => ({ ...file, review: reviewByPath.get(`${user.id}/${file.name}`) || null })), error: null };
     },
-    async uploadDocument(type, file) {
+    async uploadDocument(type, file, applicationId = null) {
       const types = new Set(['south_african_id', 'proof_of_registration', 'proof_of_residence', 'bank_statements']);
       const mimeExtensions = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' };
       if (!types.has(type) || !file || !mimeExtensions[file.type] || file.size <= 0 || file.size > 10 * 1024 * 1024) {
@@ -97,7 +143,8 @@
       const { error: reviewError } = await client.from('student_document_reviews').insert({
         user_id: user.id,
         object_path: path,
-        document_type: type
+        document_type: type,
+        ...(applicationId ? { application_id: applicationId } : {})
       });
       if (reviewError) {
         await client.storage.from('student-documents').remove([path]);

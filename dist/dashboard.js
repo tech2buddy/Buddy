@@ -29,6 +29,7 @@ function renderRoute({ focus = false, scroll = false } = {}) {
   document.querySelector('#current-section').textContent = sectionNames[activeSection];
   document.title = `${sectionNames[activeSection]} — Buddy Loans`;
   if (activeSection === 'application') renderStep(route.step);
+  if (activeSection === 'prepare' && activeSession) loadStudentDocuments();
   if (focus) document.querySelector('#dashboard-main').focus({ preventScroll: true });
   if (scroll) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -48,6 +49,73 @@ function navigate(section, step = 1) {
 let activeProfile = null;
 let activeSession = null;
 let authReady = false;
+const documentLabels = { south_african_id: 'South African ID', proof_of_registration: 'Proof of registration', proof_of_residence: 'Proof of residence', bank_statements: 'Three months of bank statements' };
+const documentForm = document.querySelector('#document-upload-form');
+const documentInput = document.querySelector('#document-file');
+const documentConsent = document.querySelector('#document-consent');
+const documentUploadButton = document.querySelector('#document-upload-button');
+const documentStatus = document.querySelector('#document-upload-status');
+const documentList = document.querySelector('#document-list');
+function updateDocumentsAccess() {
+  const signedIn = Boolean(activeSession);
+  const gate = document.querySelector('#documents-signin-gate');
+  const content = document.querySelector('#documents-authenticated');
+  if (gate) gate.hidden = signedIn;
+  if (content) content.hidden = !signedIn;
+  if (!signedIn) {
+    documentForm?.reset();
+    documentStatus.textContent = '';
+    documentList?.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'Sign in to see your secure uploads.' }));
+    updateDocumentUploadButton();
+  }
+  if (signedIn && activeSection === 'prepare') loadStudentDocuments();
+}
+function updateDocumentUploadButton() {
+  if (documentUploadButton) documentUploadButton.disabled = !activeSession || !documentConsent?.checked || !documentInput?.files?.length;
+}
+async function loadStudentDocuments() {
+  if (!documentList || !activeSession || !window.BuddyAuth?.listDocuments) return;
+  documentList.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'Loading your documents…' }));
+  try {
+    const { data, error } = await window.BuddyAuth.listDocuments();
+    if (error) throw error;
+    const files = (data || []).filter(file => file.name && !file.name.startsWith('.')).filter(file => /^[a-z_]+-[0-9a-f-]+\.(pdf|jpg|png)$/i.test(file.name));
+    documentList.replaceChildren();
+    if (!files.length) {
+      documentList.append(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'No documents uploaded yet.' }));
+      return;
+    }
+    for (const file of files) {
+      const match = file.name.match(/^([a-z_]+)-([0-9a-f-]+)\.(pdf|jpg|png)$/i);
+      const type = match?.[1];
+      if (!documentLabels[type]) continue;
+      const row = document.createElement('div'); row.className = 'document-upload-row';
+      const description = document.createElement('span'); description.className = 'document-upload-description';
+      const title = document.createElement('strong'); title.textContent = documentLabels[type];
+      const meta = document.createElement('small');
+      const created = file.created_at ? new Date(file.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Uploaded';
+      const size = Number(file.metadata?.size);
+      meta.textContent = `${created}${size ? ` · ${(size / 1024 / 1024).toFixed(1)} MB` : ''}`;
+      description.append(title, meta);
+      const actions = document.createElement('span'); actions.className = 'document-upload-actions';
+      const download = document.createElement('button'); download.type = 'button'; download.textContent = 'Open'; download.addEventListener('click', async () => {
+        download.disabled = true;
+        try { const result = await window.BuddyAuth.downloadDocument(`${activeSession.user.id}/${file.name}`); if (result.error) throw result.error; const url = URL.createObjectURL(result.data); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `Buddy-Loans-${type}.${match[3]}`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+        catch { documentStatus.textContent = 'We couldn’t open that file. Refresh and try again.'; }
+        finally { download.disabled = false; }
+      });
+      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove'; remove.addEventListener('click', async () => {
+        if (!window.confirm(`Remove your ${documentLabels[type].toLowerCase()} from secure uploads?`)) return;
+        remove.disabled = true;
+        try { const result = await window.BuddyAuth.deleteDocument(`${activeSession.user.id}/${file.name}`); if (result.error) throw result.error; documentStatus.textContent = 'Document removed.'; await loadStudentDocuments(); }
+        catch { remove.disabled = false; documentStatus.textContent = 'We couldn’t remove that file. Please try again.'; }
+      });
+      actions.append(download, remove); row.append(description, actions); documentList.append(row);
+    }
+  } catch {
+    documentList.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'Secure uploads are not set up yet. Ask the Buddy Loans team to finish storage setup, then refresh.' }));
+  }
+}
 const profileDialog = document.querySelector('#profile-settings-dialog');
 const profileOpenButton = document.querySelector('#profile-open-button');
 const accountDialog = document.querySelector('#account-dialog');
@@ -92,7 +160,6 @@ window.addEventListener('buddy-profile-ready', event => {
   const name = profile.display_name || `${profile.first_name} ${profile.last_name}`.trim();
   document.querySelector('#profile-avatar').textContent = event.detail.initials || `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase();
   document.querySelector('#profile-header-name').textContent = name;
-  activeSession = activeSession || {};
   profileOpenButton.setAttribute('aria-label', `Signed in as ${name}. Open profile and preferences`);
   updateProfileControl();
   fillProfileSettings(profile);
@@ -101,6 +168,7 @@ window.addEventListener('buddy-auth-ready', async event => {
   authReady = true;
   activeSession = event.detail?.session || null;
   updateProfileControl();
+  updateDocumentsAccess();
   if (!activeSession || !window.BuddyAuth?.getProfile) return;
   try {
     const { data, error } = await window.BuddyAuth.getProfile();
@@ -113,13 +181,52 @@ window.addEventListener('buddy-auth-state', event => {
     activeSession = null;
     authReady = true;
     updateProfileControl();
+    updateDocumentsAccess();
     if (profileDialog.open) profileDialog.close();
   } else if (event.detail?.session) {
     activeSession = event.detail.session;
     authReady = true;
     updateProfileControl();
+    updateDocumentsAccess();
   }
 });
+document.querySelector('#documents-signin-button')?.addEventListener('click', () => {
+  if (!accountDialog.open) accountDialog.showModal();
+  document.querySelector('#auth-login-tab')?.click();
+});
+documentForm?.addEventListener('change', updateDocumentUploadButton);
+documentInput?.addEventListener('change', () => {
+  documentStatus.textContent = '';
+  const file = documentInput.files?.[0];
+  if (file && (file.size > 10 * 1024 * 1024 || !['application/pdf', 'image/jpeg', 'image/png'].includes(file.type))) {
+    documentStatus.textContent = 'Choose a PDF, JPG or PNG file under 10 MB.';
+    documentInput.value = '';
+  }
+  updateDocumentUploadButton();
+});
+documentForm?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const file = documentInput.files?.[0];
+  if (!activeSession || !file || !documentConsent.checked) return;
+  documentUploadButton.disabled = true;
+  documentUploadButton.textContent = 'Uploading…';
+  documentStatus.textContent = '';
+  try {
+    const { error } = await window.BuddyAuth.uploadDocument(document.querySelector('#document-type').value, file);
+    if (error) throw error;
+    documentForm.reset();
+    documentStatus.textContent = 'Uploaded securely to your account.';
+    await loadStudentDocuments();
+  } catch (error) {
+    documentStatus.textContent = error?.message?.includes('10 MB') ? error.message : 'We couldn’t upload this file. Check your connection and storage setup, then try again.';
+  } finally {
+    documentUploadButton.replaceChildren(document.createTextNode('Upload securely '));
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', '#i-arrow'); arrow.append(use); documentUploadButton.append(arrow);
+    updateDocumentUploadButton();
+  }
+});
+document.querySelector('#document-refresh-button')?.addEventListener('click', loadStudentDocuments);
 profileOpenButton.addEventListener('click', async () => {
   if (!authReady || !activeSession) {
     if (!accountDialog.open) accountDialog.showModal();
@@ -344,7 +451,7 @@ function renderStep(step) {
   document.querySelector('#application-status').textContent = [
     'Create or sign in to your SPU account first. This guided journey does not submit or save a loan application.',
     'Loan-history pricing is not connected yet, so no personalised repayment estimate is shown.',
-    'Secure document upload is not open yet. Do not send personal documents through this page.',
+    'Upload documents from the Documents page. Files stay in private storage and are not scanned or assessed here.',
     'Affordability and credit checks are not active here. No documents are being analysed.',
     'No lending decision or final offer is made on this page.',
     'No debit order is created or accepted here. Authorisation must be explicit and separate.',

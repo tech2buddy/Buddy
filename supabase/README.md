@@ -1,6 +1,6 @@
 # Supabase setup foundation
 
-The current Buddy Loans website is a static site. Supabase Auth provides verified SPU email sign-up and login; the dashboard journey remains guidance and does not save loan applications, request credit checks, or submit a loan. Do not enable uploads until the required privacy, retention, access-review and regulatory decisions are complete.
+The current Buddy Loans website is a static site. Supabase Auth provides verified SPU email sign-up and login. The dashboard can store student documents privately, but it does not scan or assess them, save loan applications, request credit checks, or submit a loan.
 
 ## Connect a project
 
@@ -12,12 +12,14 @@ The current Buddy Loans website is a static site. Supabase Auth provides verifie
 6. In **Authentication → Hooks**, enable **Before User Created** and select `public.buddy_before_user_created`. This server-side hook limits account creation to `@spu.ac.za`; the browser must not be the only domain check.
 7. Set the Auth **Site URL** to `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site` and add `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site/**` to the allowed redirect URLs. Keep email confirmation enabled and set the minimum password length to 12 characters.
 8. An `@spu.ac.za` address is not proof of current registration; staff may share the domain. Verify registration separately before any lending application.
-9. Review and apply `migrations/202610280001_private_student_documents.sql` only after privacy, consent, retention/deletion, staff access controls and incident procedures are approved. It creates a private bucket with per-user folder isolation and 10 MiB PDF/JPEG/PNG limits; it does not create application records or a document-review workflow.
+9. Apply `migrations/202610300004_secure_student_document_uploads.sql` in the SQL Editor. It ensures the `student-documents` bucket is private, limits each file to 10 MiB and PDF/JPEG/PNG, and allows authenticated users to insert, list/download and delete only files in their own UUID folder. It intentionally grants no overwrite/update policy. The earlier `202610280001` migration is superseded by this idempotent setup.
+10. Before inviting students to upload real IDs or bank statements, approve and publish a privacy notice, a retention/deletion schedule, staff access controls and incident procedures. This site currently lets a student remove their own file; it does not provide staff review tools or automated retention/deletion.
 
 ## Deliberate boundaries
 
 - Do not enable real borrowing, pricing, credit-bureau checks, affordability decisions, or debit-order mandates through this website until the relevant NCR registration, agreements, fee rules and third-party integrations have been reviewed and approved.
 - Do not treat uploaded files or user-entered metadata as verified evidence. Validate file content server-side before any processing.
+- Uploading a document does not apply for a loan or start an AI assessment. Do not manually open/process uploaded documents until staff access, privacy and review procedures are approved.
 - The browser may use only the project URL plus its publishable/anon key. Elevated keys belong only in trusted server-side functions.
 
 ## Sources

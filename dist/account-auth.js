@@ -62,6 +62,36 @@
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
       return client.from('profiles').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', user.id).select('*').single();
+    },
+    async listDocuments() {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      return client.storage.from('student-documents').list(user.id, { limit: 40, sortBy: { column: 'created_at', order: 'desc' } });
+    },
+    async uploadDocument(type, file) {
+      const types = new Set(['south_african_id', 'proof_of_registration', 'proof_of_residence', 'bank_statements']);
+      const mimeExtensions = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' };
+      if (!types.has(type) || !file || !mimeExtensions[file.type] || file.size <= 0 || file.size > 10 * 1024 * 1024) {
+        return { data: null, error: new Error('Choose a PDF, JPG or PNG file under 10 MB.') };
+      }
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      const path = `${user.id}/${type}-${crypto.randomUUID()}.${mimeExtensions[file.type]}`;
+      return client.storage.from('student-documents').upload(path, file, { contentType: file.type, cacheControl: '0', upsert: false });
+    },
+    async downloadDocument(path) {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      const pattern = new RegExp(`^${user.id}/(south_african_id|proof_of_registration|proof_of_residence|bank_statements)-[0-9a-f-]+\\.(pdf|jpg|png)$`, 'i');
+      if (!pattern.test(path || '')) return { data: null, error: new Error('Invalid document path') };
+      return client.storage.from('student-documents').download(path);
+    },
+    async deleteDocument(path) {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      const pattern = new RegExp(`^${user.id}/(south_african_id|proof_of_registration|proof_of_residence|bank_statements)-[0-9a-f-]+\\.(pdf|jpg|png)$`, 'i');
+      if (!pattern.test(path || '')) return { data: null, error: new Error('Invalid document path') };
+      return client.storage.from('student-documents').remove([path]);
     }
   });
 

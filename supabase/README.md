@@ -8,10 +8,11 @@ The current Buddy Loans website is a static site. Supabase Auth provides verifie
 2. Never put a `service_role` / `sb_secret_...` key in browser code, the static site, or a committed file.
 3. Run `migrations/202610300001_restrict_signup_to_spu.sql` in the Supabase SQL Editor as the project owner.
 4. Run `migrations/202610300002_private_student_profiles.sql` in the Supabase SQL Editor as the project owner before enabling first-login profile onboarding. It creates the private `profiles` table; row-level security restricts each student to their own record.
-5. In **Authentication → Hooks**, enable **Before User Created** and select `public.buddy_before_user_created`. This server-side hook limits account creation to `@spu.ac.za`; the browser must not be the only domain check.
-6. Set the Auth **Site URL** to `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site` and add `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site/**` to the allowed redirect URLs. Keep email confirmation enabled and set the minimum password length to 12 characters.
-7. An `@spu.ac.za` address is not proof of current registration; staff may share the domain. Verify registration separately before any lending application.
-8. Review and apply `migrations/202610280001_private_student_documents.sql` only after privacy, consent, retention/deletion, staff access controls and incident procedures are approved. It creates a private bucket with per-user folder isolation and 10 MiB PDF/JPEG/PNG limits; it does not create application records or a document-review workflow.
+5. Run `migrations/202610300003_profile_preferences.sql` to store the student's preferred contact method and optional product-update choice.
+6. In **Authentication → Hooks**, enable **Before User Created** and select `public.buddy_before_user_created`. This server-side hook limits account creation to `@spu.ac.za`; the browser must not be the only domain check.
+7. Set the Auth **Site URL** to `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site` and add `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site/**` to the allowed redirect URLs. Keep email confirmation enabled and set the minimum password length to 12 characters.
+8. An `@spu.ac.za` address is not proof of current registration; staff may share the domain. Verify registration separately before any lending application.
+9. Review and apply `migrations/202610280001_private_student_documents.sql` only after privacy, consent, retention/deletion, staff access controls and incident procedures are approved. It creates a private bucket with per-user folder isolation and 10 MiB PDF/JPEG/PNG limits; it does not create application records or a document-review workflow.
 
 ## Deliberate boundaries
 

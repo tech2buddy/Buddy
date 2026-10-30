@@ -45,20 +45,118 @@ function navigate(section, step = 1) {
   renderRoute({ focus: true, scroll: true });
 }
 
+let activeProfile = null;
+const profileDialog = document.querySelector('#profile-settings-dialog');
+const profileOpenButton = document.querySelector('#profile-open-button');
+const profileEditForm = document.querySelector('#profile-edit-form');
+const profileEditMessage = document.querySelector('#profile-edit-message');
+const preferencesMessage = document.querySelector('#preference-save-message');
+const profilePreferenceTab = document.querySelector('#profile-tab-preferences');
+const profileDetailsTab = document.querySelector('#profile-tab-details');
+const profileDetailsPanel = document.querySelector('#profile-panel-details');
+const profilePreferencesPanel = document.querySelector('#profile-panel-preferences');
+function showProfileSettingsTab(tab) {
+  const showPreferences = tab === 'preferences';
+  profileDetailsTab.setAttribute('aria-selected', String(!showPreferences));
+  profilePreferenceTab.setAttribute('aria-selected', String(showPreferences));
+  profileDetailsPanel.hidden = showPreferences;
+  profilePreferencesPanel.hidden = !showPreferences;
+}
+function fillProfileSettings(profile) {
+  for (const [key, value] of Object.entries(profile)) {
+    const field = profileEditForm.elements.namedItem(key);
+    if (field) field.value = value ?? '';
+  }
+  const otherField = document.querySelector('#profile-edit-referral-other');
+  otherField.hidden = profile.referral_source !== 'Other';
+  document.querySelector('#preferred-contact-method').value = profile.preferred_contact_method || 'WhatsApp';
+  document.querySelector('#profile-product-updates').checked = Boolean(profile.product_updates);
+}
 window.addEventListener('buddy-profile-ready', event => {
   const profile = event.detail?.profile;
   if (!profile) return;
-  const avatar = document.querySelector('.topbar .avatar');
-  if (avatar) {
-    avatar.textContent = event.detail.initials || `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase();
-    avatar.setAttribute('aria-label', `${profile.display_name || `${profile.first_name} ${profile.last_name}`} profile`);
-    avatar.title = profile.display_name || `${profile.first_name} ${profile.last_name}`;
+  activeProfile = profile;
+  const name = profile.display_name || `${profile.first_name} ${profile.last_name}`.trim();
+  document.querySelector('#profile-avatar').textContent = event.detail.initials || `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase();
+  document.querySelector('#profile-header-name').textContent = name;
+  profileOpenButton.setAttribute('aria-label', `Signed in as ${name}. Open profile and preferences`);
+  profileOpenButton.hidden = false;
+  fillProfileSettings(profile);
+});
+window.addEventListener('buddy-auth-ready', async event => {
+  if (!event.detail?.session || !window.BuddyAuth?.getProfile) return;
+  const { data, error } = await window.BuddyAuth.getProfile();
+  if (!error && data) window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile: { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() } } }));
+});
+window.addEventListener('buddy-auth-state', event => {
+  if (event.detail?.event === 'SIGNED_OUT') {
+    activeProfile = null;
+    profileOpenButton.hidden = true;
+    if (profileDialog.open) profileDialog.close();
   }
-  const tag = document.querySelector('.topbar-tag');
-  if (tag) {
-    const dot = tag.querySelector('span');
-    tag.replaceChildren(...(dot ? [dot, document.createTextNode(` ${profile.display_name || `${profile.first_name} ${profile.last_name}`}`)] : [document.createTextNode(profile.display_name || `${profile.first_name} ${profile.last_name}`)]));
+});
+profileOpenButton.addEventListener('click', async () => {
+  if (!activeProfile && window.BuddyAuth?.getProfile) {
+    const { data, error } = await window.BuddyAuth.getProfile();
+    if (error || !data) return;
+    window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile: { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() } } }));
   }
+  const { data: userResult } = await window.BuddyAuth.getUser();
+  document.querySelector('#profile-university-email').textContent = userResult?.user?.email || 'Student email unavailable';
+  fillProfileSettings(activeProfile);
+  showProfileSettingsTab('details');
+  profileDialog.showModal();
+});
+profileDialog.querySelector('.profile-settings-close').addEventListener('click', () => profileDialog.close());
+profileDetailsTab.addEventListener('click', () => showProfileSettingsTab('details'));
+profilePreferenceTab.addEventListener('click', () => showProfileSettingsTab('preferences'));
+profileEditForm.elements.referral_source.addEventListener('change', event => {
+  document.querySelector('#profile-edit-referral-other').hidden = event.target.value !== 'Other';
+});
+profileEditForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!profileEditForm.reportValidity()) return;
+  const changes = Object.fromEntries(new FormData(profileEditForm).entries());
+  for (const key of ['first_name','last_name','hometown','home_address','phone','whatsapp_phone','personal_email','next_of_kin_name','next_of_kin_phone','referral_other']) changes[key] = String(changes[key] || '').trim();
+  changes.personal_email = changes.personal_email.toLowerCase();
+  changes.whatsapp_phone ||= changes.phone;
+  changes.referral_other = changes.referral_source === 'Other' ? changes.referral_other : '';
+  const button = profileEditForm.querySelector('.profile-save');
+  button.disabled = true;
+  try {
+    const { data, error } = await window.BuddyAuth.updateProfile(changes);
+    if (error) throw error;
+    const profile = { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() };
+    window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile } }));
+    profileEditMessage.textContent = 'Your profile has been updated.';
+    profileEditMessage.hidden = false;
+  } catch {
+    profileEditMessage.textContent = 'We couldn’t update your profile. Please try again.';
+    profileEditMessage.hidden = false;
+  } finally { button.disabled = false; }
+});
+document.querySelector('#save-preferences-button').addEventListener('click', async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  preferencesMessage.hidden = true;
+  try {
+    const { data, error } = await window.BuddyAuth.updateProfile({
+      preferred_contact_method: document.querySelector('#preferred-contact-method').value,
+      product_updates: document.querySelector('#profile-product-updates').checked
+    });
+    if (error) throw error;
+    const profile = { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() };
+    window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile } }));
+    preferencesMessage.textContent = 'Your preferences have been saved.';
+  } catch {
+    preferencesMessage.textContent = 'We couldn’t save your preferences. Please try again.';
+  } finally { preferencesMessage.hidden = false; button.disabled = false; }
+});
+document.querySelector('#profile-signout-button').addEventListener('click', async event => {
+  event.currentTarget.disabled = true;
+  const { error } = await window.BuddyAuth.signOut();
+  if (error) event.currentTarget.disabled = false;
+  else window.location.assign('index.html?open=account');
 });
 
 document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => {

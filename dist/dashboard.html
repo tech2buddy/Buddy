@@ -22,11 +22,11 @@
   <link rel="stylesheet" href="dashboard-documents.css?v=documents-redesign-1">
   <link rel="stylesheet" href="dashboard-interactions.css?v=loan-journey-2">
   <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
-  <link rel="stylesheet" href="dashboard-mobile.css?v=application-redesign-2">
-  <link rel="stylesheet" href="account-flow.css?v=profile-onboarding-1">
-  <script src="dashboard.js?v=profile-onboarding-1" defer></script>
+  <link rel="stylesheet" href="dashboard-mobile.css?v=profile-settings-1">
+  <link rel="stylesheet" href="account-flow.css?v=profile-settings-2">
+  <script src="dashboard.js?v=profile-settings-2" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="account-auth.js?v=profile-onboarding-4" defer></script>
+  <script src="account-auth.js?v=profile-settings-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#dashboard-main">Skip to dashboard</a>
@@ -63,7 +63,7 @@
       <header class="topbar">
         <a class="mobile-brand dashboard-brand-mark" href="index.html" aria-label="Buddy Loans home"><span class="brand-motion account-brand-mark" aria-hidden="true"><svg viewBox="32 14 88 76" fill="none"><defs><linearGradient id="account-motion-paint" x1="37" y1="18" x2="106" y2="87" gradientUnits="userSpaceOnUse"><stop stop-color="#ffb184"/><stop offset=".35" stop-color="#ff813b"/><stop offset=".7" stop-color="#ff5367"/><stop offset="1" stop-color="#e63858"/></linearGradient></defs><circle cx="73" cy="61" r="21" stroke="url(#account-motion-paint)" stroke-width="17"/><path d="M67 40a21 21 0 0 1 23 10" stroke="#ffd0b4" stroke-width="1.8" stroke-linecap="round" opacity=".8"/><rect x="38" y="18" width="17" height="65" rx="8.5" fill="url(#account-motion-paint)"/><path d="M41 42V26a5 5 0 0 1 5-5" stroke="#ffe0c7" stroke-width="1.5" stroke-linecap="round" opacity=".7"/><circle cx="110" cy="78" r="7" fill="url(#account-motion-paint)"/><path d="M107 74a4 4 0 0 1 4-1" stroke="#ffd4b9" stroke-width="1.2" stroke-linecap="round"/></svg></span></a>
         <div class="topbar-context"><span class="topbar-eyebrow">STUDENT ACCOUNT</span><span class="topbar-title" id="current-section">Home</span></div>
-        <div class="topbar-right"><span class="topbar-tag"><span></span> Student space</span><span class="avatar" aria-hidden="true">b.</span></div>
+        <div class="topbar-right"><span class="topbar-tag"><span></span> Student space</span><button class="profile-control" id="profile-open-button" type="button" aria-haspopup="dialog" aria-controls="profile-settings-dialog" aria-label="Open profile and preferences" hidden><span class="profile-control-avatar" id="profile-avatar">BL</span><span class="profile-control-copy"><strong id="profile-header-name">My profile</strong><small>Profile & preferences</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div>
       </header>
 
       <main id="dashboard-main" tabindex="-1">
@@ -124,6 +124,26 @@
   </div>
 
   <nav class="mobile-nav" aria-label="Dashboard sections"><a href="#overview" data-view-link="overview" aria-current="page"><svg><use href="#i-home"/></svg><span>Home</span></a><a href="#application/1" data-view-link="application"><svg><use href="#i-plan"/></svg><span>Apply</span></a><a href="#prepare" data-view-link="prepare"><svg><use href="#i-file"/></svg><span>Docs</span></a><a href="#activity" data-view-link="activity"><svg><use href="#i-activity"/></svg><span>Activity</span></a></nav>
+  <dialog id="profile-settings-dialog" class="profile-settings-dialog" aria-labelledby="profile-settings-title">
+    <div class="profile-settings-head"><div><span class="profile-kicker">YOUR BUDDY ACCOUNT</span><h2 id="profile-settings-title">Profile & preferences</h2><p>Keep your details up to date.</p></div><button type="button" class="profile-settings-close" aria-label="Close profile">×</button></div>
+    <div class="profile-settings-tabs" role="tablist" aria-label="Profile settings"><button type="button" role="tab" id="profile-tab-details" aria-selected="true" aria-controls="profile-panel-details">Profile</button><button type="button" role="tab" id="profile-tab-preferences" aria-selected="false" aria-controls="profile-panel-preferences">Preferences</button></div>
+    <form id="profile-edit-form" class="profile-settings-panel" role="tabpanel" aria-labelledby="profile-tab-details">
+      <div class="profile-account-email"><span>UNIVERSITY ACCOUNT</span><strong id="profile-university-email">Signed-in student email</strong><small>Used for account access; contact Buddy if it needs to change.</small></div>
+      <div class="profile-form-grid"><label>First name<input name="first_name" autocomplete="given-name" required maxlength="80"></label><label>Surname<input name="last_name" autocomplete="family-name" required maxlength="80"></label><label>Town or city<input name="hometown" autocomplete="address-level2" required maxlength="100"></label><label>Gender <span class="profile-optional">Optional</span><select name="gender"><option value="">Prefer not to say</option><option>Female</option><option>Male</option><option>Non-binary</option><option>Self-describe</option></select></label><label class="profile-wide">Home address<input name="home_address" autocomplete="street-address" required maxlength="300"></label><label>Mobile / call number<input name="phone" type="tel" autocomplete="tel" required maxlength="32"></label><label>WhatsApp number<input name="whatsapp_phone" type="tel" maxlength="32"></label><label class="profile-wide">Personal email<input name="personal_email" type="email" autocomplete="email" required maxlength="254"></label></div>
+      <div class="profile-section-title"><span>IN CASE WE NEED TO REACH SOMEONE</span><small>Next of kin</small></div>
+      <div class="profile-form-grid"><label>Full name<input name="next_of_kin_name" required maxlength="160"></label><label>Cell number<input name="next_of_kin_phone" type="tel" required maxlength="32"></label><label class="profile-wide">Where did you hear about Buddy?<select name="referral_source" required><option>Friend or family</option><option>Campus / university</option><option>Social media</option><option>Online search</option><option>Student organisation</option><option>Other</option></select></label><label class="profile-wide" id="profile-edit-referral-other" hidden>Tell us where<input name="referral_other" maxlength="120"></label></div>
+      <p class="profile-settings-message" id="profile-edit-message" role="status" aria-live="polite" hidden></p>
+      <div class="profile-settings-actions"><button class="profile-save" type="submit">Save changes <span aria-hidden="true">↗</span></button><button type="button" class="profile-signout" id="profile-signout-button">Sign out</button></div>
+    </form>
+    <section class="profile-settings-panel" id="profile-panel-preferences" role="tabpanel" aria-labelledby="profile-tab-preferences" hidden>
+      <span class="profile-section-title"><span>HOW SHOULD BUDDY CONTACT YOU?</span></span>
+      <label class="profile-preference-field">Preferred contact method<select id="preferred-contact-method"><option>WhatsApp</option><option>Call</option><option>Email</option></select></label>
+      <label class="profile-marketing-preference"><input id="profile-product-updates" type="checkbox"><span><strong>Product updates</strong><small>Occasional news about Buddy and student account features. You can change this any time.</small></span></label>
+      <p class="profile-settings-message" id="preference-save-message" role="status" aria-live="polite" hidden></p>
+      <button class="profile-save" id="save-preferences-button" type="button">Save preferences <span aria-hidden="true">↗</span></button>
+      <p class="profile-footnote">Account security and essential service messages may still be sent when needed.</p>
+    </section>
+  </dialog>
   <dialog id="account-dialog" aria-label="Student account"><div class="account-access-state"></div></dialog>
 </body>
 </html>

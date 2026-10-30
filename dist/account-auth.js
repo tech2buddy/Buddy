@@ -52,7 +52,17 @@
   window.BuddyAuth = Object.freeze({
     getSession: () => client.auth.getSession(),
     getUser: () => client.auth.getUser(),
-    signOut: () => client.auth.signOut()
+    signOut: () => client.auth.signOut(),
+    async getProfile() {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      return client.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    },
+    async updateProfile(changes) {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      return client.from('profiles').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', user.id).select('*').single();
+    }
   });
 
   if (!dialog || !accountState) {

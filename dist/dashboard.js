@@ -50,6 +50,7 @@ let activeProfile = null;
 let activeSession = null;
 let authReady = false;
 const documentLabels = { south_african_id: 'South African ID', proof_of_registration: 'Proof of registration', proof_of_residence: 'Proof of residence', bank_statements: 'Three months of bank statements' };
+const reviewStatusLabels = { pending: 'Pending review', reviewing: 'In review', accepted: 'Accepted', action_required: 'Action needed' };
 const documentForm = document.querySelector('#document-upload-form');
 const documentInput = document.querySelector('#document-file');
 const documentConsent = document.querySelector('#document-consent');
@@ -68,6 +69,9 @@ function updateDocumentsAccess() {
     if (fileLabel) fileLabel.textContent = 'Choose a file';
     documentStatus.textContent = '';
     documentList?.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'Sign in to see your secure uploads.' }));
+    document.querySelectorAll('[data-document-status]').forEach(badge => { badge.textContent = 'Not uploaded'; badge.className = 'doc-review-status is-missing'; });
+    const progressCount = document.querySelector('#documents-progress-count');
+    if (progressCount) progressCount.textContent = '0/4';
     updateDocumentUploadButton();
   }
   if (signedIn && activeSection === 'prepare') loadStudentDocuments();
@@ -82,6 +86,20 @@ async function loadStudentDocuments() {
     const { data, error } = await window.BuddyAuth.listDocuments();
     if (error) throw error;
     const files = (data || []).filter(file => file.name && !file.name.startsWith('.')).filter(file => /^[a-z_]+-[0-9a-f-]+\.(pdf|jpg|png)$/i.test(file.name));
+    const latestByType = new Map();
+    for (const file of files) {
+      const type = file.name.match(/^([a-z_]+)-/)?.[1];
+      if (documentLabels[type] && !latestByType.has(type)) latestByType.set(type, file.review?.review_status || 'status_unavailable');
+    }
+    let acceptedCount = 0;
+    document.querySelectorAll('[data-document-status]').forEach(badge => {
+      const status = latestByType.get(badge.dataset.documentStatus) || 'missing';
+      const labels = { ...reviewStatusLabels, missing: 'Not uploaded', status_unavailable: 'Status unavailable' };
+      badge.textContent = labels[status] || 'Status unavailable';
+      badge.className = `doc-review-status is-${status}`;
+      if (status === 'accepted') acceptedCount++;
+    });
+    document.querySelector('#documents-progress-count').textContent = `${acceptedCount}/4`;
     documentList.replaceChildren();
     if (!files.length) {
       documentList.append(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'No documents uploaded yet.' }));
@@ -98,7 +116,12 @@ async function loadStudentDocuments() {
       const created = file.created_at ? new Date(file.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Uploaded';
       const size = Number(file.metadata?.size);
       meta.textContent = `${created}${size ? ` · ${(size / 1024 / 1024).toFixed(1)} MB` : ''}`;
-      description.append(title, meta);
+      const status = file.review?.review_status || 'status_unavailable';
+      const statusPill = document.createElement('span'); statusPill.className = `document-upload-state is-${status}`; statusPill.textContent = reviewStatusLabels[status] || 'Status unavailable';
+      description.append(title, statusPill, meta);
+      if (status === 'action_required' && file.review?.review_note) {
+        const note = document.createElement('small'); note.className = 'document-review-note'; note.textContent = `Please update: ${file.review.review_note}`; description.append(note);
+      }
       const actions = document.createElement('span'); actions.className = 'document-upload-actions';
       const download = document.createElement('button'); download.type = 'button'; download.textContent = 'Open'; download.addEventListener('click', async () => {
         download.disabled = true;
@@ -114,8 +137,9 @@ async function loadStudentDocuments() {
       });
       actions.append(download, remove); row.append(description, actions); documentList.append(row);
     }
-  } catch {
-    documentList.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'Secure uploads are not set up yet. Ask the Buddy Loans team to finish storage setup, then refresh.' }));
+  } catch (error) {
+    const trackingNotReady = ['42P01', 'PGRST205'].includes(error?.code);
+    documentList.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: trackingNotReady ? 'Document review tracking is not configured yet. Run the student document review status SQL migration, then refresh.' : 'We couldn’t load your document status. Check your connection and refresh.' }));
   }
 }
 const profileDialog = document.querySelector('#profile-settings-dialog');
@@ -223,7 +247,9 @@ documentForm?.addEventListener('submit', async event => {
     documentStatus.textContent = 'Uploaded securely to your account.';
     await loadStudentDocuments();
   } catch (error) {
-    documentStatus.textContent = error?.message?.includes('10 MB') ? error.message : 'We couldn’t upload this file. Check your connection and storage setup, then try again.';
+    documentStatus.textContent = error?.message?.includes('10 MB') ? error.message
+      : ['42P01', 'PGRST205'].includes(error?.code) ? 'Status tracking isn’t configured yet, so the document was not kept. Ask the Buddy Loans team to run the review-status SQL migration.'
+        : 'We couldn’t upload this file. Check your connection and storage setup, then try again.';
   } finally {
     documentUploadButton.replaceChildren(document.createTextNode('Upload securely '));
     const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

@@ -66,7 +66,14 @@
     async listDocuments() {
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
-      return client.storage.from('student-documents').list(user.id, { limit: 40, sortBy: { column: 'created_at', order: 'desc' } });
+      const { data: files, error: storageError } = await client.storage.from('student-documents').list(user.id, { limit: 40, sortBy: { column: 'created_at', order: 'desc' } });
+      if (storageError) return { data: null, error: storageError };
+      const { data: reviews, error: reviewError } = await client.from('student_document_reviews')
+        .select('object_path,document_type,review_status,review_note,reviewed_at,created_at')
+        .eq('user_id', user.id);
+      if (reviewError) return { data: null, error: reviewError };
+      const reviewByPath = new Map((reviews || []).map(review => [review.object_path, review]));
+      return { data: (files || []).map(file => ({ ...file, review: reviewByPath.get(`${user.id}/${file.name}`) || null })), error: null };
     },
     async uploadDocument(type, file) {
       const types = new Set(['south_african_id', 'proof_of_registration', 'proof_of_residence', 'bank_statements']);
@@ -77,7 +84,18 @@
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
       const path = `${user.id}/${type}-${crypto.randomUUID()}.${mimeExtensions[file.type]}`;
-      return client.storage.from('student-documents').upload(path, file, { contentType: file.type, cacheControl: '0', upsert: false });
+      const { data, error } = await client.storage.from('student-documents').upload(path, file, { contentType: file.type, cacheControl: '0', upsert: false });
+      if (error) return { data: null, error };
+      const { error: reviewError } = await client.from('student_document_reviews').insert({
+        user_id: user.id,
+        object_path: path,
+        document_type: type
+      });
+      if (reviewError) {
+        await client.storage.from('student-documents').remove([path]);
+        return { data: null, error: reviewError };
+      }
+      return { data, error: null };
     },
     async downloadDocument(path) {
       const { data: { user }, error: authError } = await client.auth.getUser();
@@ -91,7 +109,10 @@
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
       const pattern = new RegExp(`^${user.id}/(south_african_id|proof_of_registration|proof_of_residence|bank_statements)-[0-9a-f-]+\\.(pdf|jpg|png)$`, 'i');
       if (!pattern.test(path || '')) return { data: null, error: new Error('Invalid document path') };
-      return client.storage.from('student-documents').remove([path]);
+      const { data, error } = await client.storage.from('student-documents').remove([path]);
+      if (error) return { data: null, error };
+      await client.from('student_document_reviews').delete().eq('user_id', user.id).eq('object_path', path);
+      return { data, error: null };
     }
   });
 

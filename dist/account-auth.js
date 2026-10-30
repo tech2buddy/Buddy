@@ -111,6 +111,106 @@
   const message = document.querySelector('#account-auth-message');
   const submit = document.querySelector('#account-auth-submit');
   const signedIn = document.querySelector('#account-signed-in');
+  let profileDialog = null;
+  let profileCheck = null;
+  const initialsFor = profile => `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase();
+  const ensureProfile = async user => {
+    if (!user?.id) return;
+    if (profileCheck) return profileCheck;
+    profileCheck = (async () => {
+      try {
+        const { data, error } = await client.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        if (error) throw error;
+        if (data?.first_name && data?.last_name) {
+          const profile = { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() };
+          window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile, initials: initialsFor(profile) } }));
+          if (profileDialog?.open) profileDialog.close();
+          showSignedIn(user);
+          completeSignIn();
+        } else showProfileForm(user);
+      } catch {
+        profileCheck = null;
+        showProfileForm(user);
+      }
+    })();
+    return profileCheck;
+  };
+  const showProfileForm = user => {
+    if (!profileDialog) {
+      profileDialog = document.createElement('dialog');
+      profileDialog.id = 'profile-onboarding-dialog';
+      profileDialog.className = 'profile-onboarding-dialog';
+      profileDialog.setAttribute('aria-labelledby', 'profile-onboarding-title');
+      document.body.append(profileDialog);
+      profileDialog.addEventListener('cancel', event => event.preventDefault());
+    }
+    profileDialog.innerHTML = `
+      <section class="profile-onboarding">
+        <span class="profile-kicker">YOUR STUDENT PROFILE · 1 OF 1</span>
+        <h2 id="profile-onboarding-title">Let’s get to know you.</h2>
+        <p class="profile-intro">Add your contact details once to complete your account. Your name will appear on your profile.</p>
+        <p class="profile-privacy"><span aria-hidden="true">●</span> These details complete your account profile and help us contact you. Share a next-of-kin’s details only with their permission.</p>
+        <form id="profile-onboarding-form" class="profile-form" novalidate>
+          <div class="profile-form-grid">
+            <label>First name<input name="first_name" autocomplete="given-name" required maxlength="80"></label>
+            <label>Surname<input name="last_name" autocomplete="family-name" required maxlength="80"></label>
+            <label>Where are you from?<input name="hometown" autocomplete="address-level2" placeholder="Town or city" required maxlength="100"></label>
+            <label>Gender <span class="profile-optional">Optional</span><select name="gender"><option value="">Prefer not to say</option><option>Female</option><option>Male</option><option>Non-binary</option><option>Self-describe</option></select></label>
+            <label class="profile-wide">Home address<input name="home_address" autocomplete="street-address" placeholder="Street address, suburb, town/city, province" required maxlength="300"></label>
+            <label>Call / mobile number<input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+27 …" required maxlength="32"></label>
+            <label>WhatsApp number <span class="profile-optional">Optional</span><input name="whatsapp_phone" type="tel" inputmode="tel" placeholder="Leave blank if same as mobile" maxlength="32"></label>
+            <label class="profile-wide">Personal email<input name="personal_email" type="email" autocomplete="email" placeholder="you@example.com" required maxlength="254"></label>
+          </div>
+          <div class="profile-section-title"><span>IN CASE WE NEED TO REACH SOMEONE</span><small>Next of kin</small></div>
+          <div class="profile-form-grid">
+            <label>Full name<input name="next_of_kin_name" required maxlength="160"></label>
+            <label>Cell number<input name="next_of_kin_phone" type="tel" inputmode="tel" placeholder="+27 …" required maxlength="32"></label>
+            <label class="profile-wide">Where did you hear about Buddy?<select name="referral_source" required><option value="">Choose one</option><option>Friend or family</option><option>Campus / university</option><option>Social media</option><option>Online search</option><option>Student organisation</option><option>Other</option></select></label>
+            <label class="profile-wide" id="profile-referral-other" hidden>Tell us where<input name="referral_other" maxlength="120"></label>
+          </div>
+          <label class="profile-consent"><input name="profile_consent" type="checkbox" required><span>I confirm these details are correct and I have permission to provide my next-of-kin’s contact details.</span></label>
+          <p class="profile-save-error" role="alert" hidden></p>
+          <button class="profile-save" type="submit">Save profile <span aria-hidden="true">↗</span></button>
+          <p class="profile-footnote">You can update your profile later.</p>
+        </form>
+      </section>`;
+    if (!profileDialog.open) profileDialog.showModal();
+    const onboarding = profileDialog.querySelector('#profile-onboarding-form');
+    const referralSelect = onboarding.elements.referral_source;
+    const otherField = profileDialog.querySelector('#profile-referral-other');
+    referralSelect.addEventListener('change', () => { otherField.hidden = referralSelect.value !== 'Other'; });
+    onboarding.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!onboarding.reportValidity()) return;
+      const profile = Object.fromEntries(new FormData(onboarding).entries());
+      for (const key of ['first_name', 'last_name', 'hometown', 'home_address', 'phone', 'next_of_kin_name', 'next_of_kin_phone', 'personal_email', 'referral_other']) profile[key] = String(profile[key] || '').trim();
+      profile.personal_email = profile.personal_email.toLowerCase();
+      profile.whatsapp_phone = String(profile.whatsapp_phone || profile.phone).trim();
+      profile.referral_other = profile.referral_source === 'Other' ? profile.referral_other : '';
+      if (profile.referral_source === 'Other' && !profile.referral_other) {
+        const err = onboarding.querySelector('.profile-save-error'); err.textContent = 'Please tell us where you heard about Buddy.'; err.hidden = false; return;
+      }
+      profile.id = user.id;
+      profile.updated_at = new Date().toISOString();
+      profile.profile_consent_at = new Date().toISOString();
+      const button = onboarding.querySelector('.profile-save');
+      const err = onboarding.querySelector('.profile-save-error');
+      button.disabled = true; err.hidden = true; button.querySelector('span').textContent = 'Saving…';
+      try {
+        const { error } = await client.from('profiles').upsert(profile, { onConflict: 'id' });
+        if (error) throw error;
+        profile.display_name = `${profile.first_name} ${profile.last_name}`.trim();
+        window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile, initials: initialsFor(profile) } }));
+        profileDialog.close();
+        profileCheck = Promise.resolve();
+        showSignedIn(user);
+        completeSignIn();
+      } catch {
+        button.disabled = false; button.querySelector('span').textContent = '↗';
+        err.textContent = 'We couldn’t save your profile. Please try again.'; err.hidden = false;
+      }
+    });
+  };
   const verificationSuccess = document.querySelector('#auth-verification-success');
   const verificationEmail = document.querySelector('#auth-verification-email');
   let mode = 'signup';
@@ -172,6 +272,8 @@
         return;
       }
       showSignedOut();
+      profileCheck = null;
+      if (profileDialog?.open) profileDialog.close();
     });
     signedIn.append(title, detail, dashboardLink, signOutButton);
   };
@@ -237,8 +339,7 @@
           setMessage('Email confirmation must be enabled in Supabase before sign-up can continue.', 'error');
         } else if (data.session) {
           setMessage('Your account is ready.', 'success');
-          completeSignIn();
-          showSignedIn(data.user);
+          await ensureProfile(data.user);
         } else {
           verificationEmail.textContent = email;
           form.hidden = true;
@@ -250,8 +351,7 @@
         const { data, error } = await client.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setMessage('You’re signed in.', 'success');
-        completeSignIn();
-        showSignedIn(data.user);
+        await ensureProfile(data.user);
       }
     } catch (error) {
       setMessage(error?.message || 'We couldn’t complete account access. Please try again.', 'error');
@@ -263,19 +363,17 @@
   client.auth.onAuthStateChange((event, session) => {
     window.dispatchEvent(new CustomEvent('buddy-auth-state', { detail: { event, session } }));
     if (session?.user && event === 'SIGNED_IN' && isEmailConfirmed(session.user)) {
-      showSignedIn(session.user);
-      window.setTimeout(completeSignIn, 0);
+      void ensureProfile(session.user);
     }
   });
 
   client.auth.getSession().then(({ data, error }) => {
-    if (!error && data.session?.user && isEmailConfirmed(data.session.user)) showSignedIn(data.session.user);
+    if (!error && data.session?.user && isEmailConfirmed(data.session.user)) void ensureProfile(data.session.user);
     else if (!error && data.session?.user) {
       setMessage('Verify your email before signing in.', 'error');
       window.setTimeout(() => client.auth.signOut(), 0);
     }
     window.dispatchEvent(new CustomEvent('buddy-auth-ready', { detail: { session: data?.session ?? null } }));
-    if (!error && data.session?.user) completeSignIn();
   });
 
   setMode('signup');

@@ -23,9 +23,10 @@
   <link rel="stylesheet" href="dashboard-interactions.css?v=loan-journey-2">
   <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
   <link rel="stylesheet" href="dashboard-mobile.css?v=application-redesign-2">
-  <script src="dashboard.js?v=spu-auth-1" defer></script>
+  <link rel="stylesheet" href="account-flow.css?v=profile-onboarding-1">
+  <script src="dashboard.js?v=profile-onboarding-1" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="account-auth.js?v=auth-ux-2" defer></script>
+  <script src="account-auth.js?v=profile-onboarding-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#dashboard-main">Skip to dashboard</a>
@@ -123,5 +124,6 @@
   </div>
 
   <nav class="mobile-nav" aria-label="Dashboard sections"><a href="#overview" data-view-link="overview" aria-current="page"><svg><use href="#i-home"/></svg><span>Home</span></a><a href="#application/1" data-view-link="application"><svg><use href="#i-plan"/></svg><span>Apply</span></a><a href="#prepare" data-view-link="prepare"><svg><use href="#i-file"/></svg><span>Docs</span></a><a href="#activity" data-view-link="activity"><svg><use href="#i-activity"/></svg><span>Activity</span></a></nav>
+  <dialog id="account-dialog" aria-label="Student account"><div class="account-access-state"></div></dialog>
 </body>
 </html>

@@ -91,6 +91,39 @@
 @keyframes auth-success-pop{0%{opacity:0;transform:scale(.72) rotate(-8deg)}65%{opacity:1;transform:scale(1.08) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
 @keyframes auth-success-check{to{stroke-dashoffset:0}}
 @media(prefers-reduced-motion:reduce){#account-dialog .auth-verification-success,#account-dialog .auth-success-mark,#account-dialog .auth-success-mark path{animation:none!important}#account-dialog .auth-success-mark path{stroke-dashoffset:0}}
+
+/* First sign-in profile setup */
+.profile-onboarding-dialog{width:min(680px,calc(100vw - 32px));max-width:none;max-height:min(92dvh,900px);overflow:auto;padding:34px;border:1px solid #e4e8ef;border-radius:25px;background:#fff;color:#0b1425;box-shadow:0 30px 100px #07122638}
+.profile-onboarding-dialog::backdrop{background:#0813269c;backdrop-filter:blur(8px)}
+.profile-onboarding{max-width:600px;margin:0 auto}
+.profile-kicker{display:block;color:#8993a7;font-size:9px;font-weight:800;letter-spacing:.16em}
+.profile-onboarding h2{margin:11px 0 8px;font-size:clamp(27px,5vw,36px);line-height:1.08;letter-spacing:-.065em}
+.profile-intro{margin:0;color:#6d7890;font-size:12px;line-height:1.65}
+.profile-privacy{display:flex;gap:9px;margin:15px 0 21px;padding:11px 12px;border-radius:12px;background:#f5f6fa;color:#6f7b92;font-size:10px;line-height:1.55}
+.profile-privacy span{color:#f05b66;font-size:8px;margin-top:3px}
+.profile-form{display:grid;gap:17px}
+.profile-form [hidden]{display:none!important}
+.profile-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.profile-form label{display:grid;gap:6px;color:#172136;font-size:10px;font-weight:800}
+.profile-form label input,.profile-form label select{box-sizing:border-box;width:100%;min-width:0;min-height:45px;padding:0 12px;border:1px solid #dfe4ed;border-radius:11px;background:#fff;color:#111a2d;font:500 13px Manrope,system-ui,sans-serif;outline:none}
+.profile-form label input:focus,.profile-form label select:focus{border-color:#f45b63;box-shadow:0 0 0 3px #f45b631a}
+.profile-form label input::placeholder{color:#9ba4b5;font-weight:400}
+.profile-form .profile-wide{grid-column:1/-1}
+.profile-optional{margin-left:5px;color:#8b95a8;font-size:8px;font-weight:600}
+.profile-section-title{display:grid;gap:5px;padding-top:15px;border-top:1px solid #e9edf3}
+.profile-section-title span{color:#8993a7;font-size:8px;font-weight:800;letter-spacing:.13em}
+.profile-section-title small{color:#172136;font-size:12px;font-weight:800}
+.profile-consent{display:flex;align-items:flex-start;gap:9px;color:#6f7b92;font-size:9px;line-height:1.55}
+.profile-consent input{width:16px;height:16px;flex:none;margin:1px 0 0;accent-color:#f04b5e}
+.profile-save{display:flex;align-items:center;justify-content:space-between;min-height:49px;padding:0 16px;border:0;border-radius:13px;background:#091222;color:#fff;font:800 11px Manrope,system-ui,sans-serif;cursor:pointer}
+.profile-save span{font-size:18px;font-weight:400}
+.profile-save:focus-visible{outline:2px solid #f45b63;outline-offset:3px}
+.profile-save:disabled{opacity:.65;cursor:wait}
+.profile-save-error{margin:0;color:#b4233c;font-size:10px;line-height:1.5}
+.profile-footnote{margin:-8px 0 0;color:#8a94a7;font-size:9px;line-height:1.5}
+@media(max-width:560px){.profile-onboarding-dialog{width:100vw;max-width:none;height:100dvh;max-height:100dvh;margin:0;padding:calc(22px + env(safe-area-inset-top,0px)) 20px calc(22px + env(safe-area-inset-bottom,0px));border:0;border-radius:0}.profile-form-grid{gap:11px}.profile-form label{font-size:9px}.profile-form label input,.profile-form label select{min-height:46px;padding:0 10px;font-size:12px}.profile-privacy{margin:12px 0 16px}.profile-form{gap:14px}}
+@media(max-width:370px){.profile-form-grid{grid-template-columns:1fr}.profile-form .profile-wide{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){.profile-onboarding-dialog{scroll-behavior:auto}}
 #account-dialog .auth-signed-in h3{font-size:21px;line-height:1.2;letter-spacing:-.04em;margin:0 0 8px}
 #account-dialog .auth-signed-in p{font-size:12px;line-height:1.6;color:var(--muted);margin:0}
 #account-dialog .auth-signout{display:block;margin:14px auto 0;border:0;background:transparent;color:#69758c;font:700 11px Manrope,system-ui,sans-serif;padding:10px 16px;cursor:pointer}

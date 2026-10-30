@@ -45,6 +45,22 @@ function navigate(section, step = 1) {
   renderRoute({ focus: true, scroll: true });
 }
 
+window.addEventListener('buddy-profile-ready', event => {
+  const profile = event.detail?.profile;
+  if (!profile) return;
+  const avatar = document.querySelector('.topbar .avatar');
+  if (avatar) {
+    avatar.textContent = event.detail.initials || `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase();
+    avatar.setAttribute('aria-label', `${profile.display_name || `${profile.first_name} ${profile.last_name}`} profile`);
+    avatar.title = profile.display_name || `${profile.first_name} ${profile.last_name}`;
+  }
+  const tag = document.querySelector('.topbar-tag');
+  if (tag) {
+    const dot = tag.querySelector('span');
+    tag.replaceChildren(...(dot ? [dot, document.createTextNode(` ${profile.display_name || `${profile.first_name} ${profile.last_name}`}`)] : [document.createTextNode(profile.display_name || `${profile.first_name} ${profile.last_name}`)]));
+  }
+});
+
 document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => {
   navigate(button.dataset.go, Number(button.dataset.stepGo) || 1);
 }));

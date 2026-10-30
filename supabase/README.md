@@ -1,6 +1,6 @@
 # Supabase setup foundation
 
-The current Buddy Loans website is a static site. The dashboard journey is client-side guidance and does not create an account, save an application, request a credit check, or submit a loan. Do not enable uploads until Supabase is connected and the required privacy, retention, access-review and regulatory decisions are complete.
+The current Buddy Loans website is a static site. Supabase Auth provides verified SPU email sign-up and login; the dashboard journey remains guidance and does not save loan applications, request credit checks, or submit a loan. Do not enable uploads until the required privacy, retention, access-review and regulatory decisions are complete.
 
 ## Connect a project
 
@@ -8,7 +8,7 @@ The current Buddy Loans website is a static site. The dashboard journey is clien
 2. Never put a `service_role` / `sb_secret_...` key in browser code, the static site, or a committed file.
 3. Run `migrations/202610300001_restrict_signup_to_spu.sql` in the Supabase SQL Editor as the project owner.
 4. In **Authentication → Hooks**, enable **Before User Created** and select `public.buddy_before_user_created`. This server-side hook limits account creation to `@spu.ac.za`; the browser must not be the only domain check.
-5. Set the Auth **Site URL** to `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site` and add that origin to the allowed redirect URLs. Keep email confirmation enabled.
+5. Set the Auth **Site URL** to `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site` and add `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site/**` to the allowed redirect URLs. Keep email confirmation enabled and set the minimum password length to 12 characters.
 6. An `@spu.ac.za` address is not proof of current registration; staff may share the domain. Verify registration separately before any lending application.
 7. Review and apply `migrations/202610280001_private_student_documents.sql` only after privacy, consent, retention/deletion, staff access controls and incident procedures are approved. It creates a private bucket with per-user folder isolation and 10 MiB PDF/JPEG/PNG limits; it does not create application records or a document-review workflow.
 

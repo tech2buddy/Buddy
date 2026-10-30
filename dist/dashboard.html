@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
   <link rel="stylesheet" href="dashboard-mobile.css?v=profile-settings-1">
   <link rel="stylesheet" href="account-flow.css?v=profile-settings-3">
-  <script src="dashboard.js?v=profile-settings-5" defer></script>
+  <script src="dashboard.js?v=profile-settings-6" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="account-auth.js?v=profile-settings-1" defer></script>
 </head>
@@ -127,7 +127,7 @@
   <dialog id="profile-settings-dialog" class="profile-settings-dialog" aria-labelledby="profile-settings-title">
     <div class="profile-settings-head"><div><span class="profile-kicker">YOUR BUDDY ACCOUNT</span><h2 id="profile-settings-title">Profile & preferences</h2><p>Keep your details up to date.</p></div><button type="button" class="profile-settings-close" aria-label="Close profile">×</button></div>
     <div class="profile-settings-tabs" role="tablist" aria-label="Profile settings"><button type="button" role="tab" id="profile-tab-details" aria-selected="true" aria-controls="profile-panel-details">Profile</button><button type="button" role="tab" id="profile-tab-preferences" aria-selected="false" aria-controls="profile-panel-preferences">Preferences</button></div>
-    <form id="profile-edit-form" class="profile-settings-panel" role="tabpanel" aria-labelledby="profile-tab-details">
+    <form id="profile-panel-details" class="profile-settings-panel" role="tabpanel" aria-labelledby="profile-tab-details">
       <div class="profile-account-email"><span>UNIVERSITY ACCOUNT</span><strong id="profile-university-email">Signed-in student email</strong><small>Used for account access; contact Buddy if it needs to change.</small></div>
       <div class="profile-form-grid"><label>First name<input name="first_name" autocomplete="given-name" required maxlength="80"></label><label>Surname<input name="last_name" autocomplete="family-name" required maxlength="80"></label><label>Town or city<input name="hometown" autocomplete="address-level2" required maxlength="100"></label><label>Gender <span class="profile-optional">Optional</span><select name="gender"><option value="">Prefer not to say</option><option>Female</option><option>Male</option><option>Non-binary</option><option>Self-describe</option></select></label><label class="profile-wide">Home address<input name="home_address" autocomplete="street-address" required maxlength="300"></label><label>Mobile / call number<input name="phone" type="tel" autocomplete="tel" required maxlength="32"></label><label>WhatsApp number<input name="whatsapp_phone" type="tel" maxlength="32"></label><label class="profile-wide">Personal email<input name="personal_email" type="email" autocomplete="email" required maxlength="254"></label></div>
       <div class="profile-section-title"><span>IN CASE WE NEED TO REACH SOMEONE</span><small>Next of kin</small></div>

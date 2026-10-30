@@ -70,6 +70,27 @@
 #account-dialog .auth-message:empty{display:none}
 #account-dialog .auth-message[data-kind="error"]{color:#b8233d}
 #account-dialog .auth-message[data-kind="success"]{color:#137a4a}
+#account-dialog .account-password-wrap{position:relative;display:flex;align-items:center}
+#account-dialog .account-password-wrap input{padding-right:54px}
+#account-dialog .account-show-password{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:#748097;cursor:pointer;transition:background .18s,color .18s}
+#account-dialog .account-show-password:hover,#account-dialog .account-show-password.is-visible{background:#f4f5f8;color:#e33b56}
+#account-dialog .account-show-password svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#account-dialog .auth-verification-success{padding:24px 4px 5px;text-align:center;animation:auth-success-enter .48s cubic-bezier(.2,.8,.2,1) both}
+#account-dialog .auth-success-mark{width:68px;height:68px;margin:0 auto 18px;border-radius:22px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#ff9860,#f62e54);box-shadow:0 12px 28px #f64c5930;animation:auth-success-pop .6s cubic-bezier(.16,1.25,.35,1) both}
+#account-dialog .auth-success-mark svg{width:39px;height:39px;fill:none;stroke:currentColor;stroke-width:3.3;stroke-linecap:round;stroke-linejoin:round}
+#account-dialog .auth-success-mark path{stroke-dasharray:34;stroke-dashoffset:34;animation:auth-success-check .48s .28s ease-out forwards}
+#account-dialog .auth-success-eyebrow{margin:0 0 9px;color:#8993a7;font-size:9px;font-weight:800;letter-spacing:.16em}
+#account-dialog .auth-verification-success h3{margin:0;color:var(--navy);font-size:27px;line-height:1.12;letter-spacing:-.055em}
+#account-dialog .auth-success-copy{max-width:340px;margin:12px auto 0;color:#69758d;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+#account-dialog .auth-success-copy strong{color:var(--navy);font-weight:800}
+#account-dialog .auth-return-login{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:52px;margin:23px 0 0;padding:0 17px;border:0;border-radius:14px;background:var(--navy);color:#fff;font:700 12px Manrope,system-ui,sans-serif;cursor:pointer}
+#account-dialog .auth-return-login span{font-size:18px;font-weight:400}
+#account-dialog .auth-return-login:focus-visible{outline:2px solid var(--coral);outline-offset:3px}
+#account-dialog .auth-success-footnote{margin:14px 0 0;color:#8993a7;font-size:10px;line-height:1.5}
+@keyframes auth-success-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes auth-success-pop{0%{opacity:0;transform:scale(.72) rotate(-8deg)}65%{opacity:1;transform:scale(1.08) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes auth-success-check{to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){#account-dialog .auth-verification-success,#account-dialog .auth-success-mark,#account-dialog .auth-success-mark path{animation:none!important}#account-dialog .auth-success-mark path{stroke-dashoffset:0}}
 #account-dialog .auth-signed-in h3{font-size:21px;line-height:1.2;letter-spacing:-.04em;margin:0 0 8px}
 #account-dialog .auth-signed-in p{font-size:12px;line-height:1.6;color:var(--muted);margin:0}
 #account-dialog .auth-signout{display:block;margin:14px auto 0;border:0;background:transparent;color:#69758c;font:700 11px Manrope,system-ui,sans-serif;padding:10px 16px;cursor:pointer}

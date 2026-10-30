@@ -123,6 +123,7 @@ window.addEventListener('buddy-auth-state', event => {
 profileOpenButton.addEventListener('click', async () => {
   if (!authReady || !activeSession) {
     if (!accountDialog.open) accountDialog.showModal();
+    document.querySelector('#auth-login-tab')?.click();
     return;
   }
   // Open synchronously inside the tap. Mobile Safari can discard the user

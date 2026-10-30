@@ -350,8 +350,10 @@
           await client.auth.signOut();
           setMessage('Email confirmation must be enabled in Supabase before sign-up can continue.', 'error');
         } else if (data.session) {
-          setMessage('Your account is ready.', 'success');
-          await ensureProfile(data.user);
+          await client.auth.signOut();
+          setMode('login');
+          emailInput.value = email;
+          setMessage('Your account is created. Log in to continue.', 'success');
         } else {
           verificationEmail.textContent = email;
           form.hidden = true;
@@ -374,14 +376,10 @@
 
   client.auth.onAuthStateChange((event, session) => {
     window.dispatchEvent(new CustomEvent('buddy-auth-state', { detail: { event, session } }));
-    if (session?.user && event === 'SIGNED_IN' && isEmailConfirmed(session.user)) {
-      void ensureProfile(session.user);
-    }
   });
 
   client.auth.getSession().then(({ data, error }) => {
-    if (!error && data.session?.user && isEmailConfirmed(data.session.user)) void ensureProfile(data.session.user);
-    else if (!error && data.session?.user) {
+    if (!error && data.session?.user && !isEmailConfirmed(data.session.user)) {
       setMessage('Verify your email before signing in.', 'error');
       window.setTimeout(() => client.auth.signOut(), 0);
     }

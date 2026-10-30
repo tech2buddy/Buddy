@@ -58,6 +58,14 @@
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
       return client.from('profiles').select('*').eq('id', user.id).maybeSingle();
     },
+    async getLoanHistory() {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      return client.from('buddy_loan_disbursements')
+        .select('disbursed_at')
+        .eq('user_id', user.id)
+        .order('disbursed_at', { ascending: false });
+    },
     async updateProfile(changes) {
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };

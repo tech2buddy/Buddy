@@ -195,6 +195,8 @@ window.addEventListener('buddy-auth-ready', async event => {
   activeSession = event.detail?.session || null;
   updateProfileControl();
   updateDocumentsAccess();
+  if (activeSession && window.BuddyAuth?.getLoanHistory) refreshLoanHistory();
+  else window.BuddyLoansDashboard?.setAccountContext({ authenticated: false });
   if (!activeSession || !window.BuddyAuth?.getProfile) return;
   try {
     const { data, error } = await window.BuddyAuth.getProfile();
@@ -208,12 +210,14 @@ window.addEventListener('buddy-auth-state', event => {
     authReady = true;
     updateProfileControl();
     updateDocumentsAccess();
+    window.BuddyLoansDashboard?.setAccountContext({ authenticated: false });
     if (profileDialog.open) profileDialog.close();
   } else if (event.detail?.session) {
     activeSession = event.detail.session;
     authReady = true;
     updateProfileControl();
     updateDocumentsAccess();
+    if (window.BuddyAuth?.getLoanHistory) refreshLoanHistory();
   }
 });
 document.querySelector('#documents-signin-button')?.addEventListener('click', () => {
@@ -365,6 +369,8 @@ const amountOutput = document.querySelector('#amount-output');
 const reviewAmount = document.querySelector('#review-amount');
 function formatRand(value) { return `R${Math.round(value).toLocaleString('en-ZA')}`; }
 let currentLoanHistory = null;
+let loanHistoryState = 'loading';
+let loanHistoryRequest = 0;
 function southAfricanYear(value = new Date()) {
   return new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', year: 'numeric' }).format(value);
 }
@@ -393,13 +399,21 @@ function updateEstimate(amount) {
   const legal = document.querySelector('#pricing-legal');
   const total = document.querySelector('#estimate-total');
   if (!currentLoanHistory) {
-    label.textContent = 'ACCOUNT CHECK';
-    document.querySelector('#estimate-caption').textContent = 'Your rate is being confirmed';
+    label.textContent = loanHistoryState === 'signed-out' ? 'SIGN IN REQUIRED' : loanHistoryState === 'error' ? 'HISTORY UNAVAILABLE' : 'CHECKING ACCOUNT';
+    document.querySelector('#estimate-caption').textContent = loanHistoryState === 'error'
+      ? 'We couldn’t load your loan history'
+      : loanHistoryState === 'signed-out'
+        ? 'Sign in to see your repayment estimate'
+        : 'Checking your Buddy loan history';
     total.textContent = '—';
     breakdown.hidden = true;
     legal.hidden = true;
     note.hidden = false;
-    note.textContent = 'Your rate depends on whether a Buddy loan was disbursed to you earlier this calendar year. We’ll confirm the correct repayment amount before you decide.';
+    note.textContent = loanHistoryState === 'error'
+      ? 'Your estimate is temporarily unavailable. Please refresh this page and try again.'
+      : loanHistoryState === 'signed-out'
+        ? 'Sign in to check whether this is your first Buddy loan this calendar year and see the matching estimate.'
+        : 'We’re checking whether a Buddy loan was disbursed to you earlier this calendar year.';
     return;
   }
   const repeat = currentLoanHistory === 'repeat';
@@ -407,7 +421,7 @@ function updateEstimate(amount) {
   label.textContent = repeat ? 'REPEAT LOAN THIS YEAR' : 'FIRST LOAN THIS YEAR';
   document.querySelector('#estimate-caption').textContent = 'Total due if approved';
   document.querySelector('#quote-principal').textContent = formatRand(amount);
-  document.querySelector('#quote-interest-label').textContent = `Interest · ${Math.round(interestRate * 100)}% monthly`;
+  document.querySelector('#quote-interest-label').textContent = `Interest · ${Math.round(interestRate * 100)}%`;
   document.querySelector('#quote-interest').textContent = formatRand(interest);
   document.querySelector('#quote-initiation').textContent = formatRand(initiation);
   document.querySelector('#quote-service').textContent = formatRand(service);
@@ -417,9 +431,34 @@ function updateEstimate(amount) {
   legal.hidden = false;
   note.hidden = true;
 }
+async function refreshLoanHistory() {
+  const request = ++loanHistoryRequest;
+  loanHistoryState = 'loading';
+  currentLoanHistory = null;
+  updateEstimate(Number(amountRange.value));
+  try {
+    const { data, error } = await window.BuddyAuth.getLoanHistory();
+    if (request !== loanHistoryRequest) return;
+    if (error || !Array.isArray(data)) {
+      loanHistoryState = 'error';
+      updateEstimate(Number(amountRange.value));
+      return;
+    }
+    loanHistoryState = 'loaded';
+    window.BuddyLoansDashboard?.setAccountContext({
+      authenticated: true,
+      loans: data.map(row => ({ status: 'disbursed', disbursedAt: row.disbursed_at }))
+    });
+  } catch {
+    if (request !== loanHistoryRequest) return;
+    loanHistoryState = 'error';
+    updateEstimate(Number(amountRange.value));
+  }
+}
 window.BuddyLoansDashboard = Object.freeze({
   setAccountContext(account) {
     currentLoanHistory = deriveLoanHistory(account);
+    if (!account?.authenticated) loanHistoryState = 'signed-out';
     updateEstimate(Number(amountRange.value));
   }
 });

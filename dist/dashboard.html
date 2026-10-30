@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="dashboard-account.css?v=application-redesign-2">
   <link rel="stylesheet" href="dashboard-documents.css?v=doc-review-status-1">
   <link rel="stylesheet" href="dashboard-interactions.css?v=loan-journey-2">
-  <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-1">
+  <link rel="stylesheet" href="dashboard-overview.css?v=account-summary-2">
   <link rel="stylesheet" href="dashboard-mobile.css?v=profile-settings-1">
   <link rel="stylesheet" href="account-flow.css?v=profile-settings-3">
   <script src="dashboard.js?v=doc-review-status-1" defer></script>
@@ -68,7 +68,7 @@
 
       <main id="dashboard-main" tabindex="-1">
         <section class="view" id="overview" data-view="overview" aria-labelledby="overview-title">
-          <div class="page-intro account-intro"><div><span class="section-kicker"><span class="signal-dot"></span> ACCOUNT OVERVIEW</span><h1 id="overview-title">Your account,<br><em>at a glance.</em></h1><p>Your loan status, application updates and repayment details belong together here.</p></div><span class="page-index">BUDDY ACCOUNT</span></div>
+          <div class="page-intro account-intro"><div><span class="section-kicker"><span class="signal-dot"></span> YOUR BUDDY ACCOUNT</span><h1 id="overview-title">Account overview</h1><p>Your status, next steps and updates in one place.</p></div><span class="page-index">STUDENT SPACE</span></div>
           <section class="account-snapshot" aria-label="Your Buddy account summary">
             <div class="snapshot-heading"><div><span class="snapshot-kicker">YOUR LOAN ACCOUNT</span><h2>No active loan</h2><p>When your account is ready, this is where your current loan and its progress will appear.</p></div><span class="snapshot-status"><i></i> Account opening soon</span></div>
             <div class="snapshot-metrics">
@@ -80,8 +80,8 @@
           </section>
           <div class="overview-lower">
             <section class="account-activity-card" aria-labelledby="recent-activity-title"><div class="account-section-heading"><div><span class="section-kicker">ACCOUNT ACTIVITY</span><h2 id="recent-activity-title">Recent updates</h2></div><a href="#activity" data-view-link="activity">All activity <svg><use href="#i-arrow"/></svg></a></div><div class="activity-empty"><span class="activity-empty-icon"><svg><use href="#i-activity"/></svg></span><div><strong>No updates yet</strong><p>Your application progress, loan activity and repayment reminders will appear here.</p></div></div></section>
-            <section class="account-next-card"><span class="section-kicker">YOUR NEXT STEP</span><span class="next-step-icon"><svg><use href="#i-file"/></svg></span><h2>Get ready, at your own pace.</h2><p>Check the documents you’ll need. Nothing is uploaded or assessed here.</p><button type="button" data-go="prepare">View document checklist <svg><use href="#i-arrow"/></svg></button><small>Applications open after NCR registration and secure account services are ready.</small></section>
           </div>
+          <section class="overview-apply-card" aria-labelledby="overview-apply-title"><div class="overview-apply-copy"><span class="section-kicker"><span class="signal-dot"></span> WHEN YOU’RE READY</span><h2 id="overview-apply-title">Explore your application steps.</h2><p>See how the process works and what you’ll need before applying.</p></div><button type="button" data-go="application" data-step-go="2">Explore application <svg><use href="#i-arrow"/></svg></button><small>Formal loan applications open after NCR registration and secure account services are ready.</small></section>
         </section>
 
         <section class="view" id="application" data-view="application" aria-labelledby="plan-title" hidden>

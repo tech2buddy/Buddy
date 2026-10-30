@@ -17,6 +17,11 @@ function readRoute() {
 
 function renderRoute({ focus = false, scroll = false } = {}) {
   const route = readRoute();
+  if (route.section === 'application' && route.step === 3) {
+    route.section = 'prepare';
+    route.step = 1;
+    window.history.replaceState(null, '', '#prepare');
+  }
   const routeKey = `${route.section}/${route.step}`;
   if (routeKey === renderedRouteKey) return;
   renderedRouteKey = routeKey;
@@ -40,6 +45,10 @@ function renderRoute({ focus = false, scroll = false } = {}) {
 
 function navigate(section, step = 1) {
   if (!sections.has(section)) return;
+  if (section === 'application' && step === 3) {
+    navigate('prepare');
+    return;
+  }
   const hash = section === 'application' ? `#application/${step}` : `#${section}`;
   const current = readRoute();
   if (current.section === section && (section !== 'application' || current.step === step)) return;
@@ -110,12 +119,13 @@ function updateApplicationSummary(application, documentCount = null) {
   const hasDraft = application?.status === 'draft';
   const awaitingUpdate = application && ['submitted', 'under_review', 'action_required', 'approved'].includes(application.status);
   const nextStep = hasDraft ? Number(application.current_step) : 2;
+  const nextDestination = nextStep === 3 ? 'prepare' : 'application';
   for (const selector of ['#overview-application-button', '#activity-continue-button', '#activity-empty-state button']) {
     const button = document.querySelector(selector);
     if (!button) continue;
-    button.dataset.go = awaitingUpdate ? 'activity' : 'application';
+    button.dataset.go = awaitingUpdate ? 'activity' : nextDestination;
     button.dataset.stepGo = String(nextStep);
-    const text = hasDraft ? 'Continue application' : awaitingUpdate ? 'View updates' : application ? 'Start another application' : 'Start application';
+    const text = hasDraft ? (nextStep === 3 ? 'Continue to documents' : 'Continue application') : awaitingUpdate ? 'View updates' : application ? 'Start another application' : 'Start application';
     button.firstChild.textContent = text + ' ';
   }
   set('#overview-apply-title', hasDraft ? 'Continue where you left off.' : awaitingUpdate ? 'Your application is moving forward.' : 'Start your application.');
@@ -539,6 +549,10 @@ document.querySelectorAll('[data-go]').forEach(button => button.addEventListener
 }));
 document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => {
   event.preventDefault();
+  if (link.dataset.viewLink === 'application' && activeApplication?.status === 'draft' && Number(activeApplication.current_step) === 3) {
+    navigate('prepare');
+    return;
+  }
   navigate(link.dataset.viewLink, link.dataset.viewLink === 'application'
     ? activeApplication?.status === 'draft' ? Number(activeApplication.current_step) : 2
     : 1);
@@ -791,7 +805,9 @@ document.querySelector('#next-step').addEventListener('click', async () => {
       }
       next.disabled = false;
     }
-    navigate('application', nextStep);
+    // Step 3 is the actual secure upload workspace. Take students there
+    // directly instead of making them pass through the informational panel.
+    navigate(nextStep === 3 ? 'prepare' : 'application', nextStep);
   } else {
     status.textContent = 'You’ve reached the final step. Return to your account to review your details and documents.';
     status.classList.add('completion-note');

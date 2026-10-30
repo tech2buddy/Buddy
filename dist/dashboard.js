@@ -90,7 +90,7 @@ function updateEstimate(amount) {
   const total = document.querySelector('#estimate-total');
   if (!currentLoanHistory) {
     label.textContent = 'ACCOUNT CHECK';
-    document.querySelector('#estimate-caption').textContent = 'Your estimate appears after sign-in';
+    document.querySelector('#estimate-caption').textContent = 'Loan-history pricing is not connected yet';
     total.textContent = '—';
     breakdown.hidden = true;
     legal.hidden = true;
@@ -176,8 +176,8 @@ function renderStep(step) {
     'Return to student space'
   ][activeStep - 1] + ' <svg><use href="#i-arrow"/></svg>';
   document.querySelector('#application-status').textContent = [
-    'Account sign-up is not open yet. This guided flow does not create an account or save an application.',
-    'Applications and personalised estimates become available when secure account services are live.',
+    'Create or sign in to your SPU account first. This guided journey does not submit or save a loan application.',
+    'Loan-history pricing is not connected yet, so no personalised repayment estimate is shown.',
     'Secure document upload is not open yet. Do not send personal documents through this page.',
     'Affordability and credit checks are not active here. No documents are being analysed.',
     'No lending decision or final offer is made on this page.',
@@ -190,9 +190,37 @@ document.querySelector('#back-step').addEventListener('click', () => {
   if (activeStep > 1) navigate('application', activeStep - 1);
   else navigate('overview');
 });
-document.querySelector('#next-step').addEventListener('click', () => {
+function sendToAccount(returnStep = 2) {
+  const target = new URL('index.html', window.location.href);
+  target.searchParams.set('open', 'account');
+  target.searchParams.set('return', `/dashboard.html#application/${returnStep}`);
+  window.location.assign(target.toString());
+}
+
+window.addEventListener('buddy-auth-ready', event => {
+  const route = readRoute();
+  if (!event.detail?.session && route.section === 'application' && route.step > 1) sendToAccount(route.step);
+});
+window.addEventListener('buddy-auth-state', event => {
+  const route = readRoute();
+  if (event.detail?.event === 'SIGNED_OUT' && route.section === 'application' && route.step > 1) sendToAccount(route.step);
+});
+
+document.querySelector('#next-step').addEventListener('click', async () => {
   const next = document.querySelector('#next-step');
   const status = document.querySelector('#application-status');
+  if (activeStep === 1) {
+    try {
+      const { data } = await window.BuddyAuth?.getSession();
+      if (!data?.session) {
+        sendToAccount(2);
+        return;
+      }
+    } catch {
+      sendToAccount(2);
+      return;
+    }
+  }
   if (next.dataset.finished === 'true') {
     navigate('overview');
   } else if (activeStep < steps.length) {

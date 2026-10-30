@@ -57,3 +57,20 @@
   #account-dialog .account-opening-note{font-size:11px;line-height:1.45;margin-top:12px}
 }
 @media(max-width:359px){dialog#account-dialog{padding-left:21px;padding-right:21px}#account-dialog .account-brand-mark{width:112px}#account-dialog h2{font-size:33px}}
+
+/* Supabase account access */
+#account-dialog .auth-panel{margin-top:4px}
+#account-dialog .account-options{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:999px;background:#eff1f6}
+#account-dialog .account-options button{border:0;border-radius:999px;background:transparent;color:#768199;font-size:12px;font-weight:700;transition:background .2s,color .2s,box-shadow .2s}
+#account-dialog .account-options button[aria-selected="true"]{background:#fff;color:var(--navy);box-shadow:0 2px 8px #101a2b12}
+#account-dialog .account-field{font-size:12px;font-weight:800;color:var(--navy)}
+#account-dialog .account-field input{box-sizing:border-box}
+#account-dialog .account-opening-note{margin:2px 0 0}
+#account-dialog .auth-message{min-height:0;margin:0;font-size:11px;line-height:1.5;color:#59677f}
+#account-dialog .auth-message:empty{display:none}
+#account-dialog .auth-message[data-kind="error"]{color:#b8233d}
+#account-dialog .auth-message[data-kind="success"]{color:#137a4a}
+#account-dialog .auth-signed-in h3{font-size:21px;line-height:1.2;letter-spacing:-.04em;margin:0 0 8px}
+#account-dialog .auth-signed-in p{font-size:12px;line-height:1.6;color:var(--muted);margin:0}
+#account-dialog .auth-signout{display:block;margin:14px auto 0;border:0;background:transparent;color:#69758c;font:700 11px Manrope,system-ui,sans-serif;padding:10px 16px;cursor:pointer}
+#account-dialog button:disabled{opacity:.6;cursor:wait}

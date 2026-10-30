@@ -4,13 +4,13 @@ The current Buddy Loans website is a static site. The dashboard journey is clien
 
 ## Connect a project
 
-1. Create or select the Buddy Loans Supabase project.
-2. Share its **Project URL** and **publishable key** (or legacy `anon` key) to wire up browser auth. These are intended for client applications, but access still depends on correctly configured policies.
-3. Never provide or place a `service_role` / `sb_secret_...` key in browser code, the static site, or a committed file.
-4. Confirm the allowed university email domains or the authoritative way to verify a student's university email. A generic `.ac.za` suffix is not proof of current registration.
-5. Configure email verification and approved redirect URLs for the production domain.
-6. Review and apply `migrations/202610280001_private_student_documents.sql` to that project. It creates a private bucket with per-user folder isolation and 10 MiB PDF/JPEG/PNG limits. It does not create application records or a document-review workflow.
-7. Before collecting IDs, proof of residence, registration evidence or bank statements, approve the privacy notice, consent, retention/deletion schedule, staff access controls and incident procedure. Keep files private and use short-lived signed links only when a verified reviewer needs access.
+1. Use the Buddy Loans Supabase project. Its Project URL and publishable key may be used by the browser client; the publishable key is not a secret.
+2. Never put a `service_role` / `sb_secret_...` key in browser code, the static site, or a committed file.
+3. Run `migrations/202610300001_restrict_signup_to_spu.sql` in the Supabase SQL Editor as the project owner.
+4. In **Authentication → Hooks**, enable **Before User Created** and select `public.buddy_before_user_created`. This server-side hook limits account creation to `@spu.ac.za`; the browser must not be the only domain check.
+5. Set the Auth **Site URL** to `https://buddy-loans-first-look-2026.greyhen10.chatgpt.site` and add that origin to the allowed redirect URLs. Keep email confirmation enabled.
+6. An `@spu.ac.za` address is not proof of current registration; staff may share the domain. Verify registration separately before any lending application.
+7. Review and apply `migrations/202610280001_private_student_documents.sql` only after privacy, consent, retention/deletion, staff access controls and incident procedures are approved. It creates a private bucket with per-user folder isolation and 10 MiB PDF/JPEG/PNG limits; it does not create application records or a document-review workflow.
 
 ## Deliberate boundaries
 

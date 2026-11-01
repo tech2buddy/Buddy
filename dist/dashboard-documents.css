@@ -30,6 +30,41 @@
 .document-boundary{display:flex;align-items:flex-start;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--docs-line);color:#8691a2}.document-boundary svg{width:13px;height:13px;flex:none;color:#8994a4}.document-boundary p{font-size:7px;line-height:1.55;margin:0}
 .document-upload-form[hidden],.application-submit-panel[hidden],#documents-start-gate[hidden],#documents-locked-notice[hidden]{display:none}
 .application-submit-panel{margin-top:18px;padding:17px;border:1px solid #ffe1d6;border-radius:17px;background:linear-gradient(145deg,#fff7f2,#fff)}.application-submit-panel>.section-kicker{font-size:7px;color:#8793a7}.application-submit-panel h3{margin:7px 0 6px;color:var(--docs-ink);font-size:15px;letter-spacing:-.04em}.application-submit-panel>p:not(.application-submit-status){margin:0;color:var(--docs-muted);font-size:9px;line-height:1.6}.application-submit-status{min-height:14px;margin:8px 0 0;color:#748198;font-size:8px;line-height:1.5}.application-submit-panel .documents-apply-link{margin-top:12px}
+.application-review-step[hidden],.application-review-field[hidden]{display:none}
+.application-controls[hidden]{display:none}
+.application-review-step{max-width:760px;margin:0 auto}
+.application-review-card{padding:clamp(20px,4vw,34px);border:1px solid #e7eaf0;border-radius:25px;background:linear-gradient(160deg,#fff 55%,#fff9f6);box-shadow:0 22px 55px #17243b0d;color:var(--docs-ink)}
+.application-review-heading{padding-bottom:19px;border-bottom:1px solid var(--docs-line)}
+.application-review-back{display:inline-flex;align-items:center;min-height:32px;margin:0 0 9px;padding:0;border:0;background:transparent;color:#748198;font:750 10px Manrope,system-ui,sans-serif;cursor:pointer}
+.application-review-back:hover{color:#cf4057}
+.application-review-heading .section-kicker,.application-review-amount>.section-kicker{font-size:8px;color:#8994a8}
+.application-review-heading h2{margin:10px 0 7px;font-size:clamp(25px,4vw,34px);line-height:1.08;letter-spacing:-.06em}
+.application-review-heading p{margin:0;color:var(--docs-muted);font-size:12px;line-height:1.6}
+.application-review-section{padding:19px 0;border-bottom:1px solid var(--docs-line)}
+.application-review-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.application-review-section-head h3{margin:0;font-size:14px;letter-spacing:-.035em}
+.application-review-section-head button,.application-review-amount-line button{padding:5px 0;border:0;background:transparent;color:#cf4057;font:800 10px Manrope,system-ui,sans-serif;cursor:pointer}
+.application-review-details{display:grid;gap:11px;margin:0}
+.application-review-details>div{display:grid;grid-template-columns:minmax(100px,.35fr) minmax(0,1fr);gap:12px;align-items:start}
+.application-review-details dt{color:var(--docs-muted);font-size:10px}
+.application-review-details dd{margin:0;overflow-wrap:anywhere;color:var(--docs-ink);font-size:11px;font-weight:750;line-height:1.5}
+.application-review-hint{margin:10px 0 0;color:#b34346;font-size:10px;line-height:1.5}
+.application-review-confirm{display:flex;align-items:flex-start;gap:9px;margin-top:15px;color:#59677d;font-size:10px;line-height:1.5;cursor:pointer}
+.application-review-confirm input{width:16px;height:16px;margin:0;accent-color:#f34b62;flex:none}
+.application-review-field{display:block;margin:0 0 7px;color:#738198;font-size:10px;font-weight:700}
+#review-bursary-status,.application-review-field input{width:100%;min-height:46px;padding:0 13px;border:1px solid #e3e7ee;border-radius:13px;background:#fff;color:var(--docs-ink);font:600 12px Manrope,system-ui,sans-serif}
+.application-review-field input{margin-top:7px}
+.application-review-amount{margin-top:17px;padding:17px;border:1px solid #f3ded8;border-radius:17px;background:linear-gradient(145deg,#fff4ee,#fff)}
+.application-review-amount-line{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:7px 0 14px}
+.application-review-amount-line strong{font-size:38px;line-height:1;letter-spacing:-.075em}
+.application-review-amount-line button{font-size:9px}
+.application-review-repayment{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid #f2dfd8;color:#69778d;font-size:10px}
+.application-review-repayment strong{color:var(--docs-ink);font-size:15px;white-space:nowrap}
+.application-review-amount>small{display:block;margin-top:8px;color:#8994a8;font-size:9px;line-height:1.5}
+.application-review-submit-status{min-height:16px;margin:12px 0 4px;color:#738198;font-size:10px;line-height:1.5}
+.application-review-submit{width:100%;margin-top:7px}
+.application-review-footnote{margin:11px 0 0;color:#8994a8;font-size:9px;line-height:1.55}
+@media(max-width:520px){.application-review-card{padding:19px 16px;border-radius:21px}.application-review-heading h2{font-size:27px}.application-review-heading p{font-size:11px}.application-review-section{padding:16px 0}.application-review-section-head h3{font-size:13px}.application-review-details>div{grid-template-columns:92px minmax(0,1fr);gap:9px}.application-review-details dt,.application-review-details dd,.application-review-confirm,.application-review-field{font-size:10px}.application-review-amount{padding:15px}.application-review-amount-line strong{font-size:35px}.application-review-repayment{font-size:9px}.application-review-repayment strong{font-size:14px}}
 @media(max-width:900px){.documents-layout{grid-template-columns:minmax(0,1fr)}.documents-upload-card{order:1}.documents-list-card{order:2}.documents-upload-card{padding:22px}.document-upload-form{max-width:none}}
 @media(max-width:520px){.documents-heading{align-items:flex-start;margin-bottom:9px}.documents-heading h1{font-size:36px;line-height:1.02;margin:13px 0 7px}.documents-heading-copy>p{max-width:275px;font-size:11px}.documents-count{gap:8px;padding:9px 11px;margin-top:26px;border-radius:13px;font-size:8px}.documents-count strong{font-size:20px}.documents-back{margin-bottom:11px;font-size:9px}.documents-layout{gap:11px}.documents-upload-card{padding:17px;border-radius:20px}.documents-upload-header{gap:10px}.documents-lock{width:38px;height:38px;border-radius:12px}.documents-upload-header h2{font-size:20px}.documents-upload-intro{font-size:10px;margin-top:12px}.document-upload-form{gap:9px;margin-top:15px}.document-field>label{font-size:9px}.document-upload-form select{min-height:46px;font-size:10px}.document-dropzone{min-height:64px;padding:10px}.document-drop-copy strong{font-size:9px}.document-consent{font-size:8px;padding:10px}.documents-apply-link{min-height:47px}.document-upload-list{margin-top:15px;padding-top:13px}.application-submit-panel{padding:15px;margin-top:14px}.application-submit-panel h3{font-size:14px}.application-submit-panel>p:not(.application-submit-status){font-size:9px}.document-list-empty{font-size:8px}.documents-list-card{padding:18px 16px;border-radius:19px}.documents-list-heading h2{font-size:16px}.documents-view .doc-item summary{min-height:67px;gap:10px}.documents-view .doc-icon{width:35px;height:35px}.documents-view .doc-item strong{font-size:10px}.documents-view .doc-item small{font-size:8px}.documents-view .doc-item>p{font-size:9px;padding:0 10px 14px 45px}.documents-email-note{margin-top:12px;padding:11px;border-radius:12px}.documents-email-note strong{font-size:9px}.documents-email-note small{font-size:8px}}
 @media(max-width:359px){.documents-heading h1{font-size:32px}.documents-count{gap:6px;padding:8px}.documents-list-card{padding-left:13px;padding-right:13px}.documents-list-heading h2{font-size:14px}.documents-view .doc-item strong{font-size:9px}.document-browse{display:none}}

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f8fb">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Buddy operations</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css?v=ops-6">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="runtime-config.js" defer></script>
+  <script src="admin.js?v=ops-5" defer></script>
+</head>
+<body>
+  <main class="ops-shell">
+    <header class="ops-topbar"><a class="ops-brand" href="dashboard.html" aria-label="Buddy Loans student dashboard"><span class="ops-brand-mark" aria-hidden="true"><svg viewBox="8 14 180 84" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ops-brand-paint" x1="37" y1="18" x2="106" y2="87" gradientUnits="userSpaceOnUse"><stop stop-color="#ffbd91"/><stop offset=".35" stop-color="#ff813b"/><stop offset=".7" stop-color="#ff2948"/><stop offset="1" stop-color="#d81948"/></linearGradient><linearGradient id="ops-brand-track" x1="16" y1="80" x2="184" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#ff2948" stop-opacity="0"/><stop offset=".48" stop-color="#ff813b"/><stop offset="1" stop-color="#ff2948" stop-opacity=".15"/></linearGradient></defs><ellipse cx="96" cy="57" rx="82" ry="25" transform="rotate(-19 96 57)" stroke="url(#ops-brand-track)" stroke-width=".8"/><ellipse cx="96" cy="57" rx="62" ry="36" transform="rotate(26 96 57)" stroke="#dfe3ed" stroke-width=".7"/><circle cx="73" cy="61" r="21" stroke="url(#ops-brand-paint)" stroke-width="17"/><path d="M67 40a21 21 0 0 1 23 10" stroke="#ffc4a2" stroke-width="1.8" stroke-linecap="round" opacity=".8"/><rect x="38" y="18" width="17" height="65" rx="8.5" fill="url(#ops-brand-paint)"/><path d="M41 42V26a5 5 0 0 1 5-5" stroke="#ffe5cc" stroke-width="1.5" stroke-linecap="round" opacity=".7"/><circle cx="110" cy="78" r="7" fill="url(#ops-brand-paint)"/><path d="M107 74a4 4 0 0 1 4-1" stroke="#ffcbac" stroke-width="1.2" stroke-linecap="round"/><circle cx="172" cy="43" r="4" fill="#ff813b"/><circle cx="172" cy="43" r="7" stroke="#ff813b" stroke-opacity=".16"/><path d="M140 20v14M133 27h14M135 22l10 10M135 32l10-10" stroke="#ff2948" stroke-width="1.1" stroke-linecap="round"/></svg></span><small>OPERATIONS</small></a><div class="ops-user"><span id="ops-session-label">Staff access</span><button type="button" id="ops-signout" hidden>Sign out</button></div></header>
+    <section class="ops-login" id="ops-login-panel" aria-labelledby="ops-login-title">
+      <div class="ops-login-story"><span class="ops-eyebrow"><i></i> BUDDY · STAFF WORKSPACE</span><h2>Thoughtful support,<br><em>handled with care.</em></h2><p>A clear, accountable space for reviewing applications and helping each student move forward.</p><div class="ops-login-points"><span><b>01</b> Private by design</span><span><b>02</b> Every decision tracked</span></div><span class="ops-login-orbit" aria-hidden="true"></span></div>
+      <div class="ops-login-card"><span class="ops-eyebrow">STAFF SIGN IN</span><h1 id="ops-login-title">Welcome back.</h1><p>Sign in to continue to your workspace.</p>
+        <form id="ops-login-form"><label>Work email<input id="ops-email" type="email" autocomplete="username" required maxlength="254"></label><label>Password<input id="ops-password" type="password" autocomplete="current-password" required></label><button class="ops-primary" type="submit" id="ops-login-button">Sign in securely</button></form>
+        <form id="ops-mfa-form" hidden><label>Authenticator code<input id="ops-mfa-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" minlength="6" maxlength="8" required></label><button class="ops-primary" type="submit">Verify and continue</button><button class="ops-mfa-cancel" type="button" id="ops-mfa-cancel">Use another account</button></form>
+        <section class="ops-enroll-panel" id="ops-enroll-panel" hidden aria-labelledby="ops-enroll-title"><div><span class="ops-enroll-icon" aria-hidden="true">✳</span><h2 id="ops-enroll-title">Set up your authenticator</h2><p>Scan this code with an authenticator app, then enter the code it gives you.</p></div><img id="ops-enroll-qr" alt="Authenticator setup QR code"><details class="ops-enroll-manual"><summary>Can’t scan? Use setup key</summary><code id="ops-enroll-secret"></code></details><form id="ops-enroll-form"><label>6-digit authenticator code<input id="ops-enroll-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required></label><button class="ops-primary" type="submit" id="ops-enroll-verify">Verify and continue</button></form><button class="ops-mfa-cancel" type="button" id="ops-enroll-restart" hidden>Start setup again</button><button class="ops-mfa-cancel" type="button" id="ops-enroll-cancel">Use another account</button></section>
+        <p class="ops-message" id="ops-auth-message" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+    <section class="ops-workspace" id="ops-workspace" hidden>
+      <div class="ops-heading"><div><span class="ops-eyebrow"><i></i> BUDDY · STAFF WORKSPACE</span><h1>Every application,<br>handled with care.</h1><p>Review the details, guide the next step, and keep every decision accountable.</p></div><div class="ops-heading-aside"><span class="ops-live"><i></i> Secure workspace</span><span class="ops-role" id="ops-role">Authorized staff</span></div><span class="ops-heading-orbit" aria-hidden="true"></span></div>
+      <div class="ops-integrity-note"><strong>Review controls</strong><span>Uploaded files are untrusted and are not scanned by this console. Decisions are recorded here; it does not send money or create a debit order.</span></div>
+      <div class="ops-layout">
+        <nav class="ops-nav" aria-label="Operations sections">
+          <span class="ops-nav-label">WORKSPACE</span>
+          <button type="button" class="is-active" data-page="overview" aria-current="page"><span>◫</span>Overview</button>
+          <button type="button" data-page="applications"><span>▤</span>Applications</button>
+          <button type="button" data-page="documents"><span>▧</span>Documents <b id="nav-docs-count" hidden>0</b></button>
+          <button type="button" data-page="users" id="ops-users-nav" hidden><span>♧</span>Users</button>
+          <button type="button" data-page="activity" id="ops-activity-nav" hidden><span>⌁</span>Activity</button>
+          <button type="button" data-page="staff" id="ops-staff-nav" hidden><span>♙</span>Staff access</button>
+        </nav>
+        <div class="ops-pages">
+          <section class="ops-page is-active" id="page-overview" data-page-panel="overview" aria-labelledby="overview-title">
+            <div class="ops-page-heading"><span class="ops-eyebrow">YOUR OPERATIONS</span><h2 id="overview-title">A clear view of the work.</h2><p>Applications, document checks and team activity, all in one place.</p></div>
+            <div class="ops-metrics" aria-label="Operations summary"><article><span>Submitted</span><strong id="metric-submitted">—</strong></article><article><span>In review</span><strong id="metric-review">—</strong></article><article><span>Needs action</span><strong id="metric-action">—</strong></article><article><span>Pending documents</span><strong id="metric-docs">—</strong></article></div>
+            <div class="ops-overview-grid">
+              <article class="ops-overview-card"><span class="ops-eyebrow">APPLICATIONS</span><h3>Keep each application moving.</h3><p>Review student details, requested amount and current decision status.</p><button type="button" data-go-page="applications">Open applications <span>↗</span></button></article>
+              <article class="ops-overview-card"><span class="ops-eyebrow">DOCUMENTS</span><h3>Check what needs attention.</h3><p>Open a submitted application to securely view and review its documents.</p><button type="button" data-go-page="documents">Review documents <span>↗</span></button></article>
+            </div>
+            <section class="ops-audit ops-recent-activity" id="ops-overview-activity" hidden><div class="ops-section-head"><div><span class="ops-eyebrow">LATEST</span><h2>Recent activity</h2></div><button type="button" data-go-page="activity">View activity</button></div><ol id="ops-recent-list" class="ops-audit-list"></ol><p class="ops-message" id="ops-recent-message" role="status"></p></section>
+          </section>
+          <section class="ops-page" id="page-applications" data-page-panel="applications" hidden aria-labelledby="queue-title">
+            <div class="ops-page-heading"><span class="ops-eyebrow">WORK QUEUE</span><h2 id="queue-title">Applications</h2><p>Open an application to review its details, documents and next step.</p></div>
+            <div class="ops-content"><section class="ops-queue"><div class="ops-section-head"><div><span class="ops-eyebrow">APPLICATIONS</span><h2>All applications</h2></div><button type="button" id="ops-refresh">Refresh</button></div>
+              <div class="ops-filters"><label class="sr-only" for="ops-search">Search applicants</label><input id="ops-search" type="search" placeholder="Search name or email" maxlength="120"><label class="sr-only" for="ops-status-filter">Filter by application status</label><select id="ops-status-filter"><option value="">All open and closed</option><option value="submitted">Submitted</option><option value="under_review">In review</option><option value="action_required">Needs action</option><option value="approved">Approved</option><option value="declined">Unsuccessful</option><option value="disbursed">Disbursed</option><option value="cancelled">Cancelled</option></select></div>
+              <p class="ops-message" id="ops-queue-message" role="status" aria-live="polite"></p><div class="ops-table-wrap"><table><thead><tr><th>Student</th><th>Requested</th><th>Status</th><th>Updated</th><th>Work</th></tr></thead><tbody id="ops-queue-rows"></tbody></table></div><p class="ops-empty" id="ops-queue-empty" hidden>No applications match this view.</p><div class="ops-pagination"><button type="button" id="ops-page-prev" disabled>Previous</button><span id="ops-page-label">Page 1</span><button type="button" id="ops-page-next" disabled>Next</button></div>
+            </section><aside class="ops-detail" id="ops-detail" aria-live="polite"><div class="ops-detail-empty"><span class="ops-detail-mark">b.</span><h2>Select an application</h2><p>Applicant details, submitted documents and review actions will appear here.</p></div></aside></div>
+          </section>
+          <section class="ops-page" id="page-documents" data-page-panel="documents" hidden aria-labelledby="documents-title">
+            <div class="ops-page-heading"><span class="ops-eyebrow">DOCUMENT REVIEW</span><h2 id="documents-title">Documents that need a look.</h2><p>Only documents attached to submitted applications appear here.</p></div>
+            <section class="ops-queue ops-document-queue"><div class="ops-section-head"><div><span class="ops-eyebrow">OPEN CHECKS</span><h2>Applications with documents to review</h2></div><button type="button" id="ops-docs-refresh">Refresh</button></div><p class="ops-message" id="ops-docs-message" role="status" aria-live="polite"></p><div class="ops-table-wrap"><table><thead><tr><th>Student</th><th>Open documents</th><th>Application</th><th>Updated</th><th></th></tr></thead><tbody id="ops-docs-rows"></tbody></table></div><p class="ops-empty" id="ops-docs-empty" hidden>There are no submitted documents waiting for review.</p></section>
+          </section>
+          <section class="ops-page" id="page-users" data-page-panel="users" hidden aria-labelledby="users-title">
+            <div class="ops-page-heading"><span class="ops-eyebrow">STUDENT ACCOUNTS</span><h2 id="users-title">People come first.</h2><p>Find an account, understand its history, and help the student with a clear next step.</p></div>
+            <div class="ops-users-layout">
+              <section class="ops-queue ops-user-directory" aria-labelledby="users-directory-title"><div class="ops-section-head"><div><span class="ops-eyebrow">DIRECTORY</span><h2 id="users-directory-title">All users</h2></div><button type="button" id="ops-users-refresh">Refresh</button></div>
+                <div class="ops-filters"><label class="sr-only" for="ops-users-search">Search users</label><input id="ops-users-search" type="search" placeholder="Search name or email" maxlength="100"></div>
+                <p class="ops-message" id="ops-users-message" role="status" aria-live="polite"></p><div class="ops-table-wrap"><table><thead><tr><th>Student</th><th>Applications</th><th>Latest status</th><th>Joined</th></tr></thead><tbody id="ops-users-rows"></tbody></table></div><p class="ops-empty" id="ops-users-empty" hidden>No user accounts match this search.</p><div class="ops-pagination"><button type="button" id="ops-users-prev" disabled>Previous</button><span id="ops-users-page-label">Page 1</span><button type="button" id="ops-users-next" disabled>Next</button></div>
+              </section>
+              <aside class="ops-user-detail" id="ops-user-detail" aria-live="polite"><div class="ops-detail-empty"><span class="ops-detail-mark">b.</span><h2>Select a user</h2><p>Contact options, account history and support actions will appear here.</p></div></aside>
+            </div>
+          </section>
+          <section class="ops-page" id="page-activity" data-page-panel="activity" hidden aria-labelledby="activity-title">
+            <div class="ops-page-heading"><span class="ops-eyebrow">ACCOUNTABILITY</span><h2 id="activity-title">Every action, accounted for.</h2><p>See which staff member did what, when it happened, and which account it affected.</p></div>
+            <section class="ops-audit"><div class="ops-section-head"><div><span class="ops-eyebrow">AUDIT LOG</span><h2>Staff activity</h2></div><button type="button" id="ops-audit-refresh">Refresh log</button></div><div class="ops-filters ops-audit-filters"><label class="sr-only" for="ops-audit-filter">Filter activity</label><select id="ops-audit-filter"><option value="all">All activity</option><option value="applications">Applications</option><option value="documents">Documents</option><option value="users">User support</option><option value="staff">Staff access</option></select></div><ol id="ops-audit-list" class="ops-audit-list"></ol><p class="ops-message" id="ops-audit-message" role="status"></p><div class="ops-pagination"><button type="button" id="ops-audit-prev" disabled>Newer</button><span id="ops-audit-page-label">Latest activity</span><button type="button" id="ops-audit-next" disabled>Older</button></div></section>
+          </section>
+          <section class="ops-page" id="page-staff" data-page-panel="staff" hidden aria-labelledby="staff-page-title">
+            <div class="ops-page-heading"><span class="ops-eyebrow">OWNER CONTROLS</span><h2 id="staff-page-title">Staff access.</h2><p>Manage who can review applications and documents in Buddy Operations.</p></div>
+            <section class="ops-staff" id="ops-staff-panel" aria-labelledby="staff-directory-title">
+              <div class="ops-section-head"><div><span class="ops-eyebrow">TEAM</span><h2 id="staff-directory-title">Staff directory</h2></div><button type="button" id="ops-staff-refresh">Refresh team</button></div>
+              <p class="ops-staff-guidance">Reviewer: assigned cases only. Operations: applications, document reviews and user support. Owner: full console and staff control. Accounts must already exist in Authentication and complete MFA.</p>
+              <form id="ops-staff-form" class="ops-staff-form"><label>Verified staff email<input id="ops-staff-email" type="email" autocomplete="off" maxlength="254" required></label><label>Access level<select id="ops-staff-role" required><option value="application_reviewer">Application reviewer</option><option value="operations_admin">Operations admin</option><option value="owner_admin">Owner admin</option></select></label><button class="ops-primary" type="submit" id="ops-staff-save">Save access</button></form>
+              <p class="ops-message" id="ops-staff-message" role="status" aria-live="polite"></p>
+              <div class="ops-staff-table-wrap"><table><thead><tr><th>Staff account</th><th>Access</th><th>Status</th><th>Added</th><th></th></tr></thead><tbody id="ops-staff-rows"></tbody></table></div>
+            </section>
+          </section>
+        </div>
+      </div>
+      <footer class="ops-footer">Sensitive student information · Access and decision events are recorded · Use approved review procedures</footer>
+    </section>
+    <dialog class="ops-preview" id="ops-preview-dialog"><div class="ops-preview-head"><strong id="ops-preview-title">Secure document view</strong><button type="button" id="ops-preview-close" aria-label="Close document">Close</button></div><iframe id="ops-preview-frame" title="Student document preview" sandbox="allow-same-origin"></iframe></dialog>
+  </main>
+</body>
+</html>

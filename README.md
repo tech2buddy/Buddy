@@ -5,6 +5,7 @@ Buddy Loans is a mobile-first student account and loan application website. The 
 ## Project layout
 
 - `dist/` contains the website pages, styles, scripts, and brand assets served in production.
+- `dist/admin.html` is the staff operations console at `/admin`; access is enforced by Supabase roles, MFA and database policies.
 - `scripts/build.mjs` writes the browser-safe Supabase runtime configuration into the deployment output.
 - `supabase/migrations/` contains the database changes applied to the Supabase project.
 - `*.md` design notes document product and interface decisions.

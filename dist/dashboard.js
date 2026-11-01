@@ -15,8 +15,8 @@ function readRoute() {
 
 function renderRoute({ focus = false, scroll = false } = {}) {
   const route = readRoute();
-  if (route.section === 'application' && route.step >= 3) {
-    route.section = route.step === 3 ? 'prepare' : 'activity';
+  if (route.section === 'application' && route.step >= 4) {
+    route.section = 'activity';
     route.step = 1;
     window.history.replaceState(null, '', `#${route.section}`);
   }
@@ -32,6 +32,7 @@ function renderRoute({ focus = false, scroll = false } = {}) {
   document.querySelector('#current-section').textContent = sectionNames[activeSection];
   document.title = `${sectionNames[activeSection]} — Buddy Loans`;
   if (activeSection === 'application') renderStep(route.step);
+  if (activeSection === 'application' && route.step === 3 && activeSession) loadStudentDocuments();
   if (activeSection === 'prepare' && activeSession) loadStudentDocuments();
   if ((activeSection === 'overview' || activeSection === 'activity') && activeSession) loadAccountWorkspace();
   if (focus) document.querySelector('#dashboard-main').focus({ preventScroll: true });
@@ -43,8 +44,8 @@ function renderRoute({ focus = false, scroll = false } = {}) {
 
 function navigate(section, step = 1) {
   if (!sections.has(section)) return;
-  if (section === 'application' && step >= 3) {
-    navigate(step === 3 ? 'prepare' : 'activity');
+  if (section === 'application' && step >= 4) {
+    navigate('activity');
     return;
   }
   const hash = section === 'application' ? `#application/${step}` : `#${section}`;
@@ -71,8 +72,13 @@ const documentConsent = document.querySelector('#document-consent');
 const documentUploadButton = document.querySelector('#document-upload-button');
 const documentStatus = document.querySelector('#document-upload-status');
 const documentList = document.querySelector('#document-list');
-const applicationSubmitButton = document.querySelector('#application-submit-button');
 const applicationSubmitStatus = document.querySelector('#application-submit-status');
+const applicationReviewButton = document.querySelector('#application-review-button');
+const applicationFinalSubmitButton = document.querySelector('#application-final-submit-button');
+const applicationReviewSubmitStatus = document.querySelector('#application-review-submit-status');
+const reviewResidenceConfirm = document.querySelector('#review-residence-confirm');
+const reviewBursaryStatus = document.querySelector('#review-bursary-status');
+const reviewBursaryName = document.querySelector('#review-bursary-name');
 let accountWorkspaceRequest = 0;
 const activityEventTitles = {
   application_started: 'Application started',
@@ -82,7 +88,8 @@ const activityEventTitles = {
   document_uploaded: 'Document uploaded',
   document_reviewed: 'Document review updated',
   document_removed: 'Document removed',
-  loan_disbursed: 'Loan disbursed'
+  loan_disbursed: 'Loan disbursed',
+  staff_reminder: 'A message from the Buddy team'
 };
 function displayActivityDate(value) {
   const date = new Date(value);
@@ -131,19 +138,143 @@ function updateApplicationSummary(application, documentCount = null) {
   set('#activity-application-amount', application ? `R${application.requested_amount}` : 'Not selected');
   set('#activity-document-count', documentCount === null ? (activeSession ? 'Unable to load uploads' : 'Sign in to view your uploads') : `${documentCount} document${documentCount === 1 ? '' : 's'} uploaded`);
   const hasDraft = application?.status === 'draft';
-  const awaitingUpdate = application && ['submitted', 'under_review', 'action_required', 'approved', 'declined', 'disbursed', 'cancelled'].includes(application.status);
+  const awaitingUpdate = application && ['submitted', 'under_review', 'approved', 'declined', 'disbursed', 'cancelled'].includes(application.status);
+  const needsStudentUpdate = application?.status === 'action_required';
   const nextStep = hasDraft ? Number(application.current_step) : 2;
   const nextDestination = nextStep >= 3 ? 'prepare' : 'application';
-  for (const selector of ['#overview-application-button', '#activity-continue-button', '#activity-empty-state button']) {
+  for (const selector of ['#activity-continue-button', '#activity-empty-state button']) {
     const button = document.querySelector(selector);
     if (!button) continue;
-    button.dataset.go = awaitingUpdate ? 'activity' : nextDestination;
+    button.dataset.go = needsStudentUpdate ? 'prepare' : awaitingUpdate ? 'activity' : nextDestination;
     button.dataset.stepGo = String(nextStep);
-    const text = hasDraft ? (nextStep >= 3 ? 'Continue to documents' : 'Continue application') : awaitingUpdate ? 'View updates' : application ? 'Start another application' : 'Start application';
+    const text = needsStudentUpdate ? 'Upload requested updates' : hasDraft ? (nextStep >= 3 ? 'Continue to documents' : 'Continue application') : awaitingUpdate ? 'View updates' : application ? 'View application update' : 'Start application';
     button.firstChild.textContent = text + ' ';
   }
-  set('#overview-apply-title', hasDraft ? 'Continue where you left off.' : awaitingUpdate ? 'Your application is moving forward.' : 'Start your application.');
-  set('#overview-application-cta-note', hasDraft ? `Your R${application.requested_amount} request is saved to your account.` : awaitingUpdate ? 'See your latest application and document updates.' : application ? 'Start a new request when you’re ready.' : 'Begin with your requested amount, then review the documents you’ll need.');
+  renderApplicationJourney(application);
+}
+function renderApplicationJourney(application = activeApplication) {
+  const list = document.querySelector('#application-journey-steps');
+  const title = document.querySelector('#overview-apply-title');
+  const description = document.querySelector('#journey-description');
+  const statusPill = document.querySelector('#journey-status');
+  const button = document.querySelector('#overview-application-button');
+  const note = document.querySelector('#overview-application-cta-note');
+  const meter = document.querySelector('.journey-meter');
+  const confirmation = document.querySelector('#application-submitted-confirmation');
+  if (!list || !button) return;
+
+  const profileFields = ['first_name', 'last_name', 'hometown', 'home_address', 'phone', 'personal_email', 'next_of_kin_name', 'next_of_kin_phone', 'referral_source'];
+  const profileReady = Boolean(activeProfile?.profile_consent_at && profileFields.every(key => String(activeProfile[key] || '').trim()));
+  const docsReady = requiredDocumentTypes.every(type => uploadedDocumentTypes.has(type));
+  const sent = Boolean(application && ['submitted', 'under_review', 'approved', 'declined', 'disbursed', 'cancelled'].includes(application.status));
+  const status = application?.status || '';
+  let titleText = 'A clear next step.';
+  let descriptionText = 'Your progress is saved here, so you can continue whenever you’re ready.';
+  let statusText = activeSession ? 'Getting started' : 'Sign in to begin';
+  let action = !activeSession ? 'profile' : !profileReady ? 'profile' : !application ? 'amount' : status === 'action_required' ? 'activity' : sent ? 'activity' : docsReady ? 'review' : 'documents';
+  let actionText = !activeSession ? 'Sign in to continue' : !profileReady ? 'Complete your profile' : !application ? 'Choose an amount' : status === 'action_required' ? 'View requested update' : sent ? 'View application update' : docsReady ? 'Review and submit' : 'Continue to documents';
+  let actionNote = !activeSession ? 'Sign in to save your application to your account.' : !profileReady ? 'Add your student and contact details before you apply.' : !application ? 'Choose the amount you need. You can change it before submitting.' : status === 'action_required' ? 'Read Buddy’s note first, then update the requested information.' : sent ? 'Your latest status and next steps are in Activity.' : docsReady ? 'Your documents are in. Check your details and repayment estimate before submitting.' : `Your R${application.requested_amount} amount is saved. Upload the four required documents to continue.`;
+
+  const rows = [
+    { id: 'profile', title: 'Complete your profile', detail: 'Your name, contact details and home address', done: profileReady, current: !profileReady },
+    { id: 'amount', title: 'Choose your amount', detail: application ? `R${application.requested_amount} requested` : 'Choose from R100 to R700', done: Boolean(application), current: profileReady && !application },
+    { id: 'documents', title: 'Upload your documents', detail: application ? `${uploadedDocumentTypes.size} of 4 required types uploaded` : 'ID, registration, residence and bank statements', done: sent || docsReady, current: Boolean(application && !sent && !docsReady) },
+    { id: 'review', title: 'Check and submit', detail: 'Confirm your details, bursary and repayment estimate', done: sent, current: Boolean(application && !sent && docsReady && profileReady) },
+    { id: 'decision', title: 'Buddy review and next steps', detail: 'Review, affordability assessment and any offer update', done: ['declined', 'cancelled', 'disbursed'].includes(status), current: sent && ['submitted', 'under_review', 'action_required', 'approved'].includes(status) }
+  ];
+  if (!activeSession) {
+    rows[0].detail = 'Sign in, then add your personal details';
+    rows[0].current = true;
+  } else if (!application && profileReady) {
+    rows[1].current = true;
+  }
+  if (status === 'action_required') {
+    rows[2].done = false;
+    rows[2].current = true;
+    rows[2].detail = 'Buddy has requested an update';
+    rows[3].done = false;
+    rows[3].current = false;
+  }
+  if (status === 'submitted' || status === 'under_review') {
+    rows[4].detail = 'Buddy is reviewing your application';
+    titleText = 'Your application is with Buddy.';
+    descriptionText = 'We’ll post the decision or any requested update in Activity.';
+    statusText = status === 'submitted' ? 'Submitted' : 'In review';
+  } else if (status === 'approved') {
+    rows[4].title = 'Offer and debit-order mandate';
+    rows[4].detail = 'Buddy will provide both for you to review';
+    titleText = 'Your application is approved.';
+    descriptionText = 'Buddy will show the written offer and debit-order mandate here for you to review. Nothing is collected until you accept.';
+    statusText = 'Approved';
+  } else if (status === 'action_required') {
+    titleText = 'One update is needed.';
+    descriptionText = 'Open Buddy’s update to see what needs attention, then return to your application.';
+    statusText = 'Action needed';
+  } else if (status === 'declined') {
+    titleText = 'Your application is complete.';
+    descriptionText = 'See the latest decision and any message from Buddy in Activity.';
+    statusText = 'Closed';
+  } else if (status === 'cancelled') {
+    titleText = 'This application is closed.';
+    descriptionText = 'Your application history and the latest update remain available in Activity.';
+    statusText = 'Closed';
+  } else if (status === 'disbursed') {
+    rows[4].title = 'Loan disbursed';
+    rows[4].detail = 'Follow loan and repayment updates in Activity';
+    titleText = 'Your loan is active.';
+    descriptionText = 'Your disbursement and repayment updates are available in Activity.';
+    statusText = 'Disbursed';
+  } else if (application) {
+    titleText = docsReady ? 'Your documents are ready to review.' : 'Continue where you left off.';
+    descriptionText = docsReady ? 'Check your personal details and repayment estimate before you submit.' : 'Your selected amount is saved. Complete your documents when you’re ready.';
+    statusText = docsReady ? 'Ready to review' : 'In progress';
+  } else if (!activeSession) {
+    titleText = 'Start your Buddy application.';
+    descriptionText = 'Sign in, choose an amount and follow each step from your account.';
+  } else if (!profileReady) {
+    titleText = 'First, complete your profile.';
+    descriptionText = 'We’ll keep your details with your account so you can return to your application.';
+    statusText = 'Profile needed';
+  } else {
+    titleText = 'Your next step is choosing an amount.';
+    descriptionText = 'Your application, documents and updates will stay connected here.';
+  }
+  title.textContent = titleText;
+  description.textContent = descriptionText;
+  statusPill.textContent = statusText;
+  note.textContent = actionNote;
+  button.dataset.journeyAction = action;
+  button.firstChild.textContent = `${actionText} `;
+  const completeCount = rows.filter(row => row.done).length;
+  const progressValue = sent ? (status === 'disbursed' || status === 'declined' || status === 'cancelled' ? 5 : 4) : completeCount;
+  meter.setAttribute('aria-valuenow', String(progressValue));
+  document.querySelector('#journey-meter-fill').style.width = `${progressValue * 20}%`;
+  statusPill.className = `journey-status${status === 'action_required' ? ' is-action' : sent && status !== 'action_required' ? ' is-live' : ''}`;
+  if (confirmation) {
+    const showConfirmation = ['submitted', 'under_review'].includes(status);
+    confirmation.hidden = !showConfirmation;
+    if (showConfirmation) {
+      document.querySelector('#submission-confirmation-title').textContent = status === 'submitted' ? 'Your application is with Buddy.' : 'Buddy is reviewing your application.';
+      document.querySelector('#submission-confirmation-copy').textContent = status === 'submitted'
+        ? 'We’ll review your documents and affordability. If anything else is needed, the next step will appear here in Activity.'
+        : 'There’s nothing you need to do right now. Check Activity for a decision or a request for more information.';
+      document.querySelector('#submission-confirmation-amount').textContent = `R${Number(application?.requested_amount || 0).toLocaleString('en-ZA')}`;
+    }
+  }
+  list.replaceChildren(...rows.map((row, index) => {
+    const item = document.createElement('li');
+    item.className = `journey-step${row.done ? ' is-complete' : ''}${row.current ? ' is-current' : ''}`;
+    const task = document.createElement('button');
+    task.type = 'button'; task.dataset.journeyAction = row.id;
+    task.setAttribute('aria-label', `${row.title}. ${row.done ? 'Complete' : row.current ? 'Current step' : 'Up next'}. ${row.detail}`);
+    const number = document.createElement('span'); number.className = 'journey-step-number'; number.textContent = row.done ? '✓' : String(index + 1).padStart(2, '0');
+    const copy = document.createElement('span'); copy.className = 'journey-step-copy';
+    const name = document.createElement('strong'); name.textContent = row.title;
+    const detail = document.createElement('small'); detail.textContent = row.detail;
+    const state = document.createElement('span'); state.className = 'journey-step-state'; state.textContent = row.done ? 'Complete' : row.current ? (row.id === 'decision' ? statusText : 'Next step') : 'Up next';
+    const arrow = document.createElement('span'); arrow.className = 'journey-step-arrow'; arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '↗';
+    copy.append(name, detail); task.append(number, copy, state, arrow); item.append(task); return item;
+  }));
 }
 async function loadAccountWorkspace() {
   const request = ++accountWorkspaceRequest;
@@ -177,6 +308,8 @@ async function loadAccountWorkspace() {
   }
   if (request !== accountWorkspaceRequest) return;
   activeApplication = applicationResult.error ? null : applicationResult.data;
+  renderApplicationReview();
+  if (activeApplication && (activeSection === 'prepare' || (activeSection === 'application' && activeStep === 3))) loadStudentDocuments();
   updateDocumentWorkflowVisibility();
   if (activeApplication?.status === 'draft' && Number(amountRange?.value) !== activeApplication.requested_amount) {
     amountRange.value = String(activeApplication.requested_amount);
@@ -271,7 +404,7 @@ function updateDocumentsAccess() {
     updateDocumentUploadButton();
   }
   updateDocumentWorkflowVisibility();
-  if (signedIn && activeSection === 'prepare') loadStudentDocuments();
+  if (signedIn && (activeSection === 'prepare' || (activeSection === 'application' && activeStep === 3))) loadStudentDocuments();
 }
 function updateDocumentWorkflowVisibility() {
   const signedIn = Boolean(activeSession);
@@ -301,23 +434,71 @@ function updateDocumentWorkflowVisibility() {
     if (title) title.textContent = statusCopy[0];
     if (copy) copy.textContent = statusCopy[1];
   }
+  if (activeApplication && !canPrepare && activeSection === 'application' && activeStep === 3) {
+    navigate('activity');
+    return;
+  }
   updateApplicationSubmitButton();
 }
 function updateApplicationSubmitButton() {
-  if (!applicationSubmitButton) return;
+  if (!applicationReviewButton) return;
   const ready = Boolean(activeSession && activeApplication?.status === 'draft'
     && requiredDocumentTypes.every(type => uploadedDocumentTypes.has(type)));
   const canResubmit = activeApplication?.status === 'action_required'
     && requiredDocumentTypes.every(type => uploadedDocumentTypes.has(type));
   const canSubmit = ready || canResubmit;
-  applicationSubmitButton.disabled = !activeSession || !canSubmit;
-  applicationSubmitButton.firstChild.textContent = (activeApplication?.status === 'action_required' ? 'Resubmit for review ' : 'Submit application for review ');
+  applicationReviewButton.disabled = !activeSession || !canSubmit;
+  applicationReviewButton.firstChild.textContent = (activeApplication?.status === 'action_required' ? 'Review and resubmit ' : 'Review details ');
   if (applicationSubmitStatus && ['draft', 'action_required'].includes(activeApplication?.status)) {
     const missing = requiredDocumentTypes.filter(type => !uploadedDocumentTypes.has(type)).length;
     applicationSubmitStatus.textContent = canSubmit
-      ? activeApplication.status === 'action_required' ? 'Your requested updates are uploaded. Resubmit when you’re ready.' : 'All four document types are uploaded. Submit when you’re ready.'
-      : `Upload ${missing} more required document type${missing === 1 ? '' : 's'} to ${activeApplication.status === 'action_required' ? 'resubmit' : 'submit'}.`;
+      ? activeApplication.status === 'action_required' ? 'Your requested updates are uploaded. Review your details before resubmitting.' : 'All four documents are uploaded. Review your details before submitting.'
+      : `Upload ${missing} more required document type${missing === 1 ? '' : 's'} to continue.`;
   }
+}
+function updateApplicationReviewButton() {
+  if (!applicationFinalSubmitButton) return;
+  const hasProfile = Boolean(activeProfile?.first_name?.trim() && activeProfile?.last_name?.trim() && activeProfile?.home_address?.trim());
+  const bursaryStatus = reviewBursaryStatus?.value || '';
+  const bursaryName = reviewBursaryName?.value?.trim() || '';
+  const bursaryReady = bursaryStatus === 'none' || (bursaryStatus === 'using' && bursaryName.length > 0);
+  const docsReady = requiredDocumentTypes.every(type => uploadedDocumentTypes.has(type));
+  const applicationOpen = ['draft', 'action_required'].includes(activeApplication?.status);
+  applicationFinalSubmitButton.disabled = !activeSession || !applicationOpen || !hasProfile || !reviewResidenceConfirm?.checked || !bursaryReady || !docsReady;
+  if (applicationReviewSubmitStatus && !applicationReviewSubmitStatus.dataset.submitting) {
+    if (!hasProfile) applicationReviewSubmitStatus.textContent = 'Complete your name and home address in your profile to continue.';
+    else if (!reviewResidenceConfirm.checked) applicationReviewSubmitStatus.textContent = 'Confirm your home address above to continue.';
+    else if (!bursaryStatus) applicationReviewSubmitStatus.textContent = 'Select whether you’re using a bursary.';
+    else if (bursaryStatus === 'using' && !bursaryName) applicationReviewSubmitStatus.textContent = 'Enter the name of your bursary.';
+    else if (!docsReady) applicationReviewSubmitStatus.textContent = 'All four required documents must be uploaded before you submit.';
+    else applicationReviewSubmitStatus.textContent = '';
+  }
+}
+function renderApplicationReview() {
+  const firstName = document.querySelector('#review-first-name');
+  const surname = document.querySelector('#review-surname');
+  const homeAddress = document.querySelector('#review-home-address');
+  const hint = document.querySelector('#review-profile-hint');
+  const profileReady = Boolean(activeProfile?.first_name?.trim() && activeProfile?.last_name?.trim() && activeProfile?.home_address?.trim());
+  if (firstName) firstName.textContent = activeProfile?.first_name?.trim() || (activeProfile ? 'Add your name to your profile' : 'Loading your profile…');
+  if (surname) surname.textContent = activeProfile?.last_name?.trim() || (activeProfile ? 'Add your surname to your profile' : 'Loading your profile…');
+  if (homeAddress) homeAddress.textContent = activeProfile?.home_address?.trim() || (activeProfile ? 'Add your current home address in your profile' : 'Loading your profile…');
+  if (hint) {
+    hint.hidden = profileReady;
+    hint.textContent = activeProfile ? 'Some details are missing. Update your profile before you submit.' : 'We couldn’t load your profile yet. Try again or open Profile & preferences.';
+  }
+  if (reviewBursaryStatus && activeApplication && !reviewBursaryStatus.value && activeApplication.bursary_status) reviewBursaryStatus.value = activeApplication.bursary_status;
+  if (reviewBursaryName && activeApplication && !reviewBursaryName.value && activeApplication.bursary_name) reviewBursaryName.value = activeApplication.bursary_name;
+  const usingBursary = reviewBursaryStatus?.value === 'using';
+  const bursaryNameField = document.querySelector('#review-bursary-name-field');
+  if (bursaryNameField) bursaryNameField.hidden = !usingBursary;
+  const requested = Number(activeApplication?.requested_amount || amountRange?.value || 0);
+  document.querySelector('#review-requested-amount').textContent = formatRand(requested);
+  const estimate = document.querySelector('#review-estimated-repayment');
+  if (estimate) estimate.textContent = currentLoanHistory
+    ? (document.querySelector('#estimate-total')?.textContent || 'Estimate unavailable')
+    : loanHistoryState === 'loading' ? 'Checking your loan history…' : 'Confirmed in your written offer';
+  updateApplicationReviewButton();
 }
 function updateDocumentUploadButton() {
   if (documentUploadButton) documentUploadButton.disabled = !activeSession || !['draft', 'action_required'].includes(activeApplication?.status) || !documentConsent?.checked || !documentInput?.files?.length;
@@ -329,8 +510,9 @@ async function loadStudentDocuments() {
     const { data, error } = await window.BuddyAuth.listDocuments();
     if (error) throw error;
     const files = (data || []).filter(file => file.name && !file.name.startsWith('.')).filter(file => /^[a-z_]+-[0-9a-f-]+\.(pdf|jpg|png)$/i.test(file.name));
+    const currentApplicationFiles = files.filter(file => file.review?.application_id === activeApplication?.id);
     const latestByType = new Map();
-    for (const file of files) {
+    for (const file of currentApplicationFiles) {
       const type = file.name.match(/^([a-z_]+)-/)?.[1];
       if (documentLabels[type] && !latestByType.has(type)) latestByType.set(type, file.review?.review_status || 'status_unavailable');
     }
@@ -340,15 +522,16 @@ async function loadStudentDocuments() {
       .map(file => file.name.match(/^([a-z_]+)-/)?.[1])
       .filter(type => documentLabels[type]));
     updateApplicationSubmitButton();
-    let acceptedCount = 0;
+    renderApplicationJourney(activeApplication);
+    let uploadedCount = 0;
     document.querySelectorAll('[data-document-status]').forEach(badge => {
       const status = latestByType.get(badge.dataset.documentStatus) || 'missing';
       const labels = { ...reviewStatusLabels, missing: 'Not uploaded', status_unavailable: 'Status unavailable' };
       badge.textContent = labels[status] || 'Status unavailable';
       badge.className = `doc-review-status is-${status}`;
-      if (status === 'accepted') acceptedCount++;
+      if (uploadedDocumentTypes.has(badge.dataset.documentStatus)) uploadedCount++;
     });
-    document.querySelector('#documents-progress-count').textContent = `${acceptedCount}/4`;
+    document.querySelector('#documents-progress-count').textContent = `${uploadedCount}/4`;
     documentList.replaceChildren();
     if (!files.length) {
       documentList.append(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: 'No documents uploaded yet.' }));
@@ -438,12 +621,15 @@ window.addEventListener('buddy-profile-ready', event => {
   profileOpenButton.setAttribute('aria-label', `Signed in as ${name}. Open profile and preferences`);
   updateProfileControl();
   fillProfileSettings(profile);
+  renderApplicationReview();
+  renderApplicationJourney(activeApplication);
 });
 window.addEventListener('buddy-auth-ready', async event => {
   authReady = true;
   activeSession = event.detail?.session || null;
   updateProfileControl();
   updateDocumentsAccess();
+  renderApplicationReview();
   loadAccountWorkspace();
   connectActivityRealtime();
   if (activeSession && window.BuddyAuth?.getLoanHistory) refreshLoanHistory();
@@ -461,6 +647,7 @@ window.addEventListener('buddy-auth-state', event => {
     authReady = true;
     updateProfileControl();
     updateDocumentsAccess();
+    renderApplicationReview();
     activityUnsubscribe?.();
     activityUnsubscribe = null;
     activityWatchRequest++;
@@ -473,6 +660,7 @@ window.addEventListener('buddy-auth-state', event => {
     authReady = true;
     updateProfileControl();
     updateDocumentsAccess();
+    renderApplicationReview();
     loadAccountWorkspace();
     connectActivityRealtime();
     if (window.BuddyAuth?.getLoanHistory) refreshLoanHistory();
@@ -520,29 +708,55 @@ documentForm?.addEventListener('submit', async event => {
     updateDocumentUploadButton();
   }
 });
-applicationSubmitButton?.addEventListener('click', async () => {
-  if (applicationSubmitButton.disabled) return;
-  applicationSubmitButton.disabled = true;
-  applicationSubmitStatus.textContent = 'Submitting your application…';
+applicationReviewButton?.addEventListener('click', async () => {
+  if (applicationReviewButton.disabled) return;
+  if (!activeProfile && window.BuddyAuth?.getProfile) {
+    applicationReviewButton.disabled = true;
+    applicationSubmitStatus.textContent = 'Loading your profile…';
+    const { data } = await window.BuddyAuth.getProfile();
+    if (data) window.dispatchEvent(new CustomEvent('buddy-profile-ready', { detail: { profile: { ...data, display_name: `${data.first_name} ${data.last_name}`.trim() } } }));
+  }
+  applicationSubmitStatus.textContent = '';
+  navigate('application', 3);
+  renderApplicationReview();
+});
+applicationFinalSubmitButton?.addEventListener('click', async () => {
+  if (applicationFinalSubmitButton.disabled) return;
+  applicationFinalSubmitButton.disabled = true;
+  applicationReviewSubmitStatus.dataset.submitting = 'true';
+  applicationReviewSubmitStatus.textContent = 'Submitting your application…';
   try {
-    const { data, error } = await window.BuddyAuth.submitApplication();
+    const bursaryStatus = reviewBursaryStatus.value;
+    const bursaryName = bursaryStatus === 'using' ? reviewBursaryName.value.trim() : null;
+    const { data, error } = await window.BuddyAuth.submitApplication({
+      bursaryStatus,
+      bursaryName,
+      residenceConfirmed: reviewResidenceConfirm.checked
+    });
     if (error) throw error;
     activeApplication = Array.isArray(data) ? data[0] : data;
     if (!activeApplication) throw new Error('No application was returned');
-    applicationSubmitStatus.textContent = 'Application submitted. Buddy will post your next update in Activity.';
+    applicationReviewSubmitStatus.textContent = 'Application submitted. Buddy will post your next update in Activity.';
     await loadAccountWorkspace();
     updateDocumentWorkflowVisibility();
     navigate('activity');
   } catch (error) {
     const message = error?.code === '23514'
-      ? 'Please upload all four required document types for this application before submitting.'
+      ? (error.message?.includes('profile') ? 'Complete your name and home address in Profile & preferences before submitting.' : 'Please confirm your home address and upload all four required document types before submitting.')
       : error?.code === '42883'
-        ? 'Application submission is not configured yet. Please contact Buddy Loans.'
+        ? 'Application submission needs a database update before it can be completed. Please contact Buddy Loans.'
         : 'We couldn’t submit your application. Check your connection and try again.';
-    updateApplicationSubmitButton();
-    applicationSubmitStatus.textContent = message;
+    applicationReviewSubmitStatus.dataset.submitting = '';
+    updateApplicationReviewButton();
+    applicationReviewSubmitStatus.textContent = message;
   }
 });
+reviewBursaryStatus?.addEventListener('change', () => { renderApplicationReview(); });
+reviewBursaryName?.addEventListener('input', updateApplicationReviewButton);
+reviewResidenceConfirm?.addEventListener('change', updateApplicationReviewButton);
+document.querySelector('#review-edit-profile')?.addEventListener('click', () => profileOpenButton.click());
+document.querySelector('#review-back-documents')?.addEventListener('click', () => navigate('prepare'));
+document.querySelector('#review-change-amount')?.addEventListener('click', () => navigate('application', 2));
 document.querySelector('#document-refresh-button')?.addEventListener('click', loadStudentDocuments);
 document.querySelector('#activity-refresh-button')?.addEventListener('click', loadAccountWorkspace);
 profileOpenButton.addEventListener('click', async () => {
@@ -637,12 +851,35 @@ document.querySelector('#profile-signout-button').addEventListener('click', asyn
 });
 
 document.querySelectorAll('[data-go]').forEach(button => button.addEventListener('click', () => {
+  if (button.dataset.journeyAction) {
+    runJourneyAction(button.dataset.journeyAction);
+    return;
+  }
   navigate(button.dataset.go, Number(button.dataset.stepGo) || 1);
 }));
+function runJourneyAction(action) {
+  if (action === 'profile') { profileOpenButton.click(); return; }
+  if (action === 'amount') { navigate('application', 2); return; }
+  if (action === 'documents') { navigate('prepare'); return; }
+  if (action === 'review') {
+    if (activeApplication?.status === 'action_required' && !uploadedDocumentTypes.size) { navigate('activity'); return; }
+    navigate('application', 3);
+    return;
+  }
+  if (action === 'decision') navigate('activity');
+}
+document.querySelector('#application-journey-steps')?.addEventListener('click', event => {
+  const task = event.target.closest('[data-journey-action]');
+  if (task) runJourneyAction(task.dataset.journeyAction);
+});
 document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => {
   event.preventDefault();
   if (link.dataset.viewLink === 'application') {
-    const waitingOnBuddy = activeApplication && ['submitted', 'under_review', 'action_required', 'approved'].includes(activeApplication.status);
+    if (activeApplication?.status === 'action_required') {
+      navigate('prepare');
+      return;
+    }
+    const waitingOnBuddy = activeApplication && ['submitted', 'under_review', 'approved'].includes(activeApplication.status);
     if (waitingOnBuddy) {
       navigate('activity');
       return;
@@ -757,6 +994,7 @@ window.BuddyLoansDashboard = Object.freeze({
     currentLoanHistory = deriveLoanHistory(account);
     if (!account?.authenticated) loanHistoryState = 'signed-out';
     updateEstimate(Number(amountRange.value));
+    renderApplicationReview();
   }
 });
 function updateAmount() {
@@ -786,38 +1024,45 @@ async function persistApplicationProgress(nextStep) {
 function renderStep(step) {
   activeStep = step;
   const nextButton = document.querySelector('#next-step');
+  const controls = document.querySelector('.application-controls');
   nextButton.dataset.finished = 'false';
   document.querySelectorAll('[data-application-step]').forEach(panel => {
     panel.hidden = Number(panel.dataset.applicationStep) !== activeStep;
   });
   const amountStage = activeStep === 2;
-  document.querySelector('#step-label').textContent = amountStage ? 'Choose an amount' : 'Account access';
-  document.querySelector('#step-count').textContent = amountStage ? 'Step 1 of 3' : 'Account access';
-  document.querySelector('#step-index').textContent = amountStage ? '01 / 03' : 'ACCOUNT';
+  const reviewStage = activeStep === 3;
+  if (controls) controls.hidden = reviewStage;
+  document.querySelector('#step-label').textContent = amountStage ? 'Choose an amount' : reviewStage ? 'Review your details' : 'Account access';
+  document.querySelector('#step-count').textContent = amountStage ? 'Step 1 of 3' : reviewStage ? 'Step 3 of 3' : 'Account access';
+  document.querySelector('#step-index').textContent = amountStage ? '01 / 03' : reviewStage ? '03 / 03' : 'ACCOUNT';
   document.querySelector('#step-description').textContent = amountStage
-    ? 'Choose the amount you need. Next, upload your documents and submit your application for Buddy to review.'
-    : 'Sign in to your student account before continuing.';
+    ? 'Choose the amount you need. Next, upload your documents and review everything before you submit.'
+    : reviewStage ? 'Confirm your details, bursary and amount before sending your application.'
+      : 'Sign in to your student account before continuing.';
   const heading = document.querySelector('#plan-title');
-  heading.replaceChildren(document.createTextNode(amountStage ? 'Choose an ' : 'Create your '));
+  heading.replaceChildren(document.createTextNode(amountStage ? 'Choose an ' : reviewStage ? 'Review your ' : 'Create your '));
   const accent = document.createElement('em');
-  accent.textContent = amountStage ? 'amount.' : 'student account.';
+  accent.textContent = amountStage ? 'amount.' : reviewStage ? 'application.' : 'student account.';
   heading.append(accent);
   const progressTrack = document.querySelector('.application-intro .progress-track');
-  progressTrack.setAttribute('aria-valuenow', amountStage ? '1' : '0');
+  progressTrack.setAttribute('aria-valuenow', amountStage ? '1' : reviewStage ? '3' : '0');
   progressTrack.setAttribute('aria-valuemax', '3');
-  progressTrack.setAttribute('aria-valuetext', amountStage ? 'Step 1 of 3' : 'Account access');
-  document.querySelector('#progress-fill').style.width = amountStage ? '33.333%' : '0%';
+  progressTrack.setAttribute('aria-valuetext', amountStage ? 'Step 1 of 3' : reviewStage ? 'Step 3 of 3' : 'Account access');
+  document.querySelector('#progress-fill').style.width = amountStage ? '33.333%' : reviewStage ? '100%' : '0%';
   document.querySelector('#back-step').disabled = false;
-  document.querySelector('#back-step').setAttribute('aria-label', 'Back to student space');
+  document.querySelector('#back-step').textContent = reviewStage ? '← Back to documents' : amountStage ? '← Back' : '← Back';
+  document.querySelector('#back-step').setAttribute('aria-label', reviewStage ? 'Back to documents' : 'Back to previous step');
   nextButton.innerHTML = (amountStage ? 'Continue to documents' : 'Open account access') + ' <svg><use href="#i-arrow"/></svg>';
+  if (reviewStage) renderApplicationReview();
   const appStatus = document.querySelector('#application-status');
   appStatus.classList.remove('completion-note');
   appStatus.textContent = amountStage
     ? 'Your amount is saved when you continue. You can return here from Docs to change it.'
-    : 'Sign in with your SPU email to continue with your application.';
+    : reviewStage ? 'Your application is submitted only after you confirm the details below.'
+      : 'Sign in with your SPU email to continue with your application.';
 }
 
-document.querySelector('#back-step').addEventListener('click', () => navigate('overview'));
+document.querySelector('#back-step').addEventListener('click', () => navigate(activeStep === 3 ? 'prepare' : activeStep === 2 ? 'overview' : 'overview'));
 function sendToAccount(returnStep = 2) {
   const target = new URL('index.html', window.location.href);
   target.searchParams.set('open', 'account');

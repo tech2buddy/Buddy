@@ -79,7 +79,7 @@
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
       return client.from('student_loan_applications')
-        .select('id,requested_amount,current_step,status,created_at,updated_at')
+        .select('id,requested_amount,current_step,status,bursary_status,bursary_name,residence_confirmed_at,created_at,updated_at')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false }).limit(1).maybeSingle();
     },
@@ -104,10 +104,14 @@
       return client.from('student_loan_applications').insert({ ...values, user_id: user.id })
         .select('id,requested_amount,current_step,status,created_at,updated_at').single();
     },
-    async submitApplication() {
+    async submitApplication({ bursaryStatus, bursaryName, residenceConfirmed }) {
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
-      return client.rpc('submit_student_application');
+      return client.rpc('submit_student_application', {
+        p_bursary_status: bursaryStatus,
+        p_bursary_name: bursaryName,
+        p_residence_confirmed: residenceConfirmed
+      });
     },
     async getActivityEvents() {
       const { data: { user }, error: authError } = await client.auth.getUser();

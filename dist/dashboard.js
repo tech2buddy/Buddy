@@ -25,6 +25,7 @@ function renderRoute({ focus = false, scroll = false } = {}) {
   renderedRouteKey = routeKey;
   activeSection = route.section;
   document.querySelector('#dashboard-main').classList.toggle('has-application-review', activeSection === 'application' && route.step === 3);
+  document.querySelector('.application-controls').hidden = activeSection !== 'application';
   document.querySelectorAll('[data-view]').forEach(panel => { panel.hidden = panel.dataset.view !== activeSection; });
   document.querySelectorAll('[data-view-link]').forEach(link => {
     if (link.dataset.viewLink === activeSection) link.setAttribute('aria-current', 'page');
@@ -541,8 +542,8 @@ function updateApplicationReviewButton() {
     else if (!applicationOpen) applicationReviewSubmitStatus.textContent = 'Your saved application is unavailable. Return to your amount and documents, then try again.';
     else if (!hasProfile) applicationReviewSubmitStatus.textContent = 'Complete your name and home address in your profile to continue.';
     else if (!reviewResidenceConfirm.checked) applicationReviewSubmitStatus.textContent = 'Confirm your home address above to continue.';
-    else if (!bursaryStatus) applicationReviewSubmitStatus.textContent = 'Select whether you’re using a bursary.';
-    else if (bursaryStatus === 'using' && !bursaryName) applicationReviewSubmitStatus.textContent = 'Enter the name of your bursary.';
+    else if (!bursaryStatus) applicationReviewSubmitStatus.textContent = 'Choose a bursary option above to enable submission.';
+    else if (bursaryStatus === 'using' && !bursaryName) applicationReviewSubmitStatus.textContent = 'Enter your bursary name above to enable submission.';
     else if (!docsReady) applicationReviewSubmitStatus.textContent = 'All four required documents must be uploaded before you submit.';
     else applicationReviewSubmitStatus.textContent = '';
     applicationReviewSubmitStatus.hidden = !applicationReviewSubmitStatus.textContent;

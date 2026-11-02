@@ -391,7 +391,7 @@
     mode = nextMode;
     const signup = mode === 'signup';
     const login = mode === 'login';
-    const passwordEntry = signup || mode === 'reset';
+    const passwordEntry = signup || login || mode === 'reset';
     document.querySelector('.account-options').hidden = mode === 'recover' || mode === 'reset';
     signupTab.setAttribute('aria-selected', String(signup));
     loginTab.setAttribute('aria-selected', String(login));

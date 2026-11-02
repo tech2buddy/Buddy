@@ -90,6 +90,25 @@
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false }).limit(1).maybeSingle();
     },
+    async getCurrentOffer(applicationId) {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };
+      let targetId = applicationId;
+      if (!targetId) {
+        const current = await this.getCurrentApplication();
+        if (current.error) return current;
+        targetId = current.data?.id;
+      }
+      if (!targetId) return { data: null, error: null };
+      return client.from('buddy_application_offers').select('id,application_id,principal_amount,interest_amount,initiation_fee,service_fee,total_repayment,repayment_date,offer_status,mandate_provider,mandate_request_reference,mandate_authorization_url,mandate_status,student_authorization_reference,mandate_review_note,payment_reference,created_at')
+        .eq('application_id', targetId).maybeSingle();
+    },
+    async decideOffer(offerId, accept) {
+      return client.rpc('student_accept_buddy_offer', { p_offer_id: offerId, p_accept: Boolean(accept) });
+    },
+    async submitMandateReference(offerId, reference) {
+      return client.rpc('student_submit_mandate_reference', { p_offer_id: offerId, p_reference: reference });
+    },
     async saveDraftApplication(applicationId, requestedAmount, currentStep) {
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) return { data: null, error: authError || new Error('Sign in required') };

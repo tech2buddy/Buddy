@@ -1,6 +1,6 @@
 # Supabase setup foundation
 
-The current Buddy Loans website is a static site. Supabase Auth provides verified SPU email sign-up and login. The dashboard can store student documents privately, but it does not scan or assess them, save loan applications, request credit checks, or submit a loan.
+The Buddy Loans website is a static site backed by Supabase Auth and database functions. Students can save and submit applications, upload documents privately, and follow updates. Staff review is manual. The system does not automatically scan documents, assess affordability, execute a debit order, or transfer funds.
 
 ## Connect a project
 
@@ -25,9 +25,15 @@ The console uses only the public Supabase publishable key. Database functions ve
 
 Application approval records an internal review outcome only; it does not move money, execute a debit order, or issue an offer. The console does not claim to scan files or assess affordability. Disbursement reconciliation, mandate signing, automated document analysis, retention deletion, and messaging integrations require trusted providers and approved procedures before they can run. A manual reviewer must validate files and decisions; do not treat a filename, browser MIME type, university domain, or uploaded statement as verified evidence. Before processing real identity and bank documents, publish and implement a privacy/retention policy and incident response procedure.
 
+### Written offers, mandate authorization and payout tracking
+
+After all four latest documents are accepted and an operations admin approves an application, the owner or operations admin can issue a written offer from the application detail. The offer uses the recorded disbursement history to select the first-loan (5%) or repeat-loan (3%) interest rate, applies the 15% initiation fee, and uses a service fee of 20% (first loan) or 22% (repeat loan), capped at R60. The student sees the itemized offer in Activity and must explicitly accept it before authorizing a debit order.
+
+Before enabling this workflow, apply `migrations/202611020001_buddy_offer_mandate_flow.sql` after all prerequisites above, including `202611010006_buddy_admin_user_management.sql`. This migration adds student-owned offer visibility and audited, role-checked RPCs for offer issue, acceptance, provider-reference review, and recording a completed payout. It does not integrate a mandate provider or initiate collection or bank transfer. Staff must use a provider approved by Buddy, give the student that provider's secure authorization link, independently verify provider confirmation, and record payout only after it has actually been sent. Never extract or copy account numbers from bank statements into Buddy. The student submits a provider confirmation reference; it remains unverified until staff check it with the provider. A real provider integration and its operational/legal approval are still required before automated mandates or collections can run.
+
 ## Deliberate boundaries
 
-- Do not enable borrowing, credit-bureau checks, affordability decisions, or debit-order mandates through this website until the agreements, fee rules, trusted providers and operational controls are ready.
+- Do not enable automated borrowing, credit-bureau checks, affordability decisions, debit-order collection, or bank transfers through this website until the agreements, fee rules, trusted providers and operational controls are ready. The written-offer workflow is for manual staff and provider handling only.
 - Do not treat uploaded files or user-entered metadata as verified evidence. Validate file content server-side before any processing.
 - Uploading a document does not apply for a loan or start an AI assessment. Do not manually open/process uploaded documents until staff access, privacy and review procedures are approved.
 - The browser may use only the project URL plus its publishable/anon key. Elevated keys belong only in trusted server-side functions.

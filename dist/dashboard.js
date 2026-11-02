@@ -58,6 +58,7 @@ function navigate(section, step = 1) {
 let activeProfile = null;
 let activeSession = null;
 let activeApplication = null;
+let activeOffer = null;
 let authReady = false;
 let activityUnsubscribe = null;
 let activityWatchRequest = 0;
@@ -276,6 +277,69 @@ function renderApplicationJourney(application = activeApplication) {
     copy.append(name, detail); task.append(number, copy, state, arrow); item.append(task); return item;
   }));
 }
+function renderBuddyOffer(offer, error = null) {
+  const card = document.querySelector('#buddy-offer-card');
+  if (!card) return;
+  activeOffer = offer || null;
+  card.replaceChildren();
+  card.hidden = !offer && !error;
+  if (!offer && !error) return;
+  if (error) {
+    card.append(Object.assign(document.createElement('span'), { className: 'section-kicker', textContent: 'YOUR WRITTEN OFFER' }), Object.assign(document.createElement('h2'), { textContent: 'Offer details unavailable' }), Object.assign(document.createElement('p'), { className: 'buddy-offer-copy', textContent: 'We could not load the latest offer. Refresh Activity or contact Buddy for help.' }));
+    return;
+  }
+  const statusText = offer.payment_reference ? 'Funds sent' : {
+    offered: 'Your decision needed', accepted: 'Offer accepted', declined: 'Offer declined', withdrawn: 'Offer withdrawn'
+  }[offer.offer_status] || 'Offer update';
+  const heading = document.createElement('div'); heading.className = 'buddy-offer-heading';
+  const copy = document.createElement('div'); copy.append(Object.assign(document.createElement('span'), { className: 'section-kicker', textContent: 'YOUR WRITTEN OFFER' }), Object.assign(document.createElement('h2'), { textContent: statusText }));
+  const badge = Object.assign(document.createElement('span'), { className: `buddy-offer-status is-${offer.payment_reference ? 'verified' : offer.offer_status === 'declined' || offer.offer_status === 'withdrawn' ? 'closed' : offer.mandate_status}`, textContent: offer.payment_reference ? 'Disbursed' : offer.offer_status === 'declined' || offer.offer_status === 'withdrawn' ? 'Closed' : ({ awaiting_student: offer.offer_status === 'offered' ? 'Offer ready' : 'Mandate next', proof_received: 'Checking authorization', verified: 'Authorization verified', rejected: 'Action needed' })[offer.mandate_status] || 'Offer ready' });
+  heading.append(copy, badge); card.append(heading);
+  if (error) { card.append(Object.assign(document.createElement('p'), { className: 'buddy-offer-copy', textContent: 'We could not load the latest offer details. Refresh Activity to try again.' })); return; }
+  const description = document.createElement('p'); description.className = 'buddy-offer-copy';
+  description.textContent = offer.offer_status === 'offered'
+    ? 'Review the full cost and repayment date. Accepting the offer is separate from authorizing the debit order with your provider.'
+    : offer.offer_status === 'declined' ? 'You declined this written offer. Contact Buddy if you need help or want to discuss your application.'
+      : offer.offer_status === 'withdrawn' ? 'This offer is no longer available. Contact Buddy if you need help.'
+    : offer.mandate_status === 'proof_received' ? 'Your provider confirmation was received. Buddy will verify it before recording any disbursement.'
+    : offer.payment_reference ? `Buddy recorded this disbursement. Payment reference: ${offer.payment_reference}. Your repayment date and amount are shown above.`
+      : offer.mandate_status === 'verified' ? 'Your provider confirmation is verified. Buddy will arrange the next step and update you here.'
+        : offer.mandate_status === 'rejected' ? `Buddy needs you to check the authorization reference${offer.mandate_review_note ? `: ${offer.mandate_review_note}` : '.'}`
+          : 'Complete authorization with the named provider. Buddy will verify the confirmation before recording any disbursement.';
+  card.append(description);
+  const rows = [
+    ['Amount to you', offer.principal_amount], ['Interest', offer.interest_amount], ['Initiation fee', offer.initiation_fee],
+    ['Service fee', offer.service_fee], ['Total repayment', offer.total_repayment]
+  ];
+  const breakdown = document.createElement('dl'); breakdown.className = 'buddy-offer-breakdown';
+  rows.forEach(([label, amount], index) => { const line = document.createElement('div'); line.className = index === rows.length - 1 ? 'is-total' : ''; line.append(Object.assign(document.createElement('dt'), { textContent: label }), Object.assign(document.createElement('dd'), { textContent: `R${Number(amount).toLocaleString('en-ZA')}` })); breakdown.append(line); });
+  const date = new Date(`${offer.repayment_date}T12:00:00`);
+  const repay = document.createElement('p'); repay.className = 'buddy-offer-date'; repay.textContent = `One repayment on ${Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' }).format(date) : offer.repayment_date}.`;
+  card.append(breakdown, repay);
+  if (offer.payment_reference) { const payment = document.createElement('p'); payment.className = 'buddy-offer-provider'; payment.textContent = `Payment reference: ${offer.payment_reference}`; card.append(payment); }
+  if (offer.offer_status === 'offered') {
+    const consent = document.createElement('label'); consent.className = 'buddy-offer-consent';
+    const check = document.createElement('input'); check.type = 'checkbox';
+    consent.append(check, Object.assign(document.createElement('span'), { textContent: `I have reviewed the written offer and accept the total repayment of R${Number(offer.total_repayment).toLocaleString('en-ZA')} on the date shown above.` }));
+    const accept = Object.assign(document.createElement('button'), { className: 'buddy-offer-primary', type: 'button', textContent: 'Accept written offer' }); accept.disabled = true; check.addEventListener('change', () => { accept.disabled = !check.checked; });
+    const decline = Object.assign(document.createElement('button'), { className: 'buddy-offer-secondary', type: 'button', textContent: 'Decline offer' });
+    const decide = async accepted => { accept.disabled = decline.disabled = true; const result = await window.BuddyAuth.decideOffer(offer.id, accepted); if (result.error) { description.textContent = 'We could not save your decision. Refresh and try again.'; accept.disabled = false; decline.disabled = false; return; } await loadAccountWorkspace(); };
+    accept.addEventListener('click', () => decide(true)); decline.addEventListener('click', () => { if (window.confirm('Decline this written offer?')) decide(false); });
+    const actions = document.createElement('div'); actions.className = 'buddy-offer-actions'; actions.append(accept, decline); card.append(consent, actions);
+  } else if (offer.offer_status === 'accepted' && ['awaiting_student', 'rejected'].includes(offer.mandate_status)) {
+    const provider = document.createElement('p'); provider.className = 'buddy-offer-provider'; provider.textContent = `Authorization provider: ${offer.mandate_provider} · Request reference ${offer.mandate_request_reference}`; card.append(provider);
+    const linkUrl = (() => { try { const url = new URL(offer.mandate_authorization_url); return url.protocol === 'https:' ? url.toString() : ''; } catch { return ''; } })();
+    if (linkUrl) { const link = document.createElement('a'); link.className = 'buddy-offer-primary buddy-offer-link'; link.href = linkUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Continue to secure authorization ↗'; card.append(link); }
+    const form = document.createElement('form'); form.className = 'buddy-offer-proof-form';
+    const label = document.createElement('label'); label.textContent = 'Provider confirmation reference';
+    const input = document.createElement('input'); input.type = 'text'; input.autocomplete = 'off'; input.maxLength = 120; input.required = true; input.placeholder = 'Enter the reference from your bank or provider';
+    const note = document.createElement('small'); note.textContent = 'Enter only the authorization reference. Do not enter your bank account number or password.';
+    const submit = Object.assign(document.createElement('button'), { className: 'buddy-offer-secondary', type: 'submit', textContent: 'Send for verification' });
+    label.append(input, note); form.append(label, submit); form.addEventListener('submit', async event => { event.preventDefault(); submit.disabled = true; const result = await window.BuddyAuth.submitMandateReference(offer.id, input.value.trim()); if (result.error) { note.textContent = 'We could not save that reference. Check it and try again.'; submit.disabled = false; return; } await loadAccountWorkspace(); }); card.append(form);
+  } else if (offer.offer_status === 'accepted' && offer.mandate_status === 'proof_received') {
+    const provider = document.createElement('p'); provider.className = 'buddy-offer-provider'; provider.textContent = `Provider confirmation: ${offer.student_authorization_reference || 'Received'}`; card.append(provider);
+  }
+}
 async function loadAccountWorkspace() {
   const request = ++accountWorkspaceRequest;
   const activityStatus = document.querySelector('#activity-load-status');
@@ -308,6 +372,12 @@ async function loadAccountWorkspace() {
   }
   if (request !== accountWorkspaceRequest) return;
   activeApplication = applicationResult.error ? null : applicationResult.data;
+  if (activeApplication && window.BuddyAuth?.getCurrentOffer) {
+    const offerResult = await window.BuddyAuth.getCurrentOffer(activeApplication.id);
+    if (request !== accountWorkspaceRequest) return;
+    const offerFeatureActive = ['approved', 'disbursed'].includes(activeApplication.status);
+    renderBuddyOffer(offerResult.error ? null : offerResult.data, offerResult.error && offerFeatureActive ? offerResult.error : null);
+  } else renderBuddyOffer(null);
   renderApplicationReview();
   if (activeApplication && (activeSection === 'prepare' || (activeSection === 'application' && activeStep === 3))) loadStudentDocuments();
   updateDocumentWorkflowVisibility();
@@ -466,12 +536,15 @@ function updateApplicationReviewButton() {
   const applicationOpen = ['draft', 'action_required'].includes(activeApplication?.status);
   applicationFinalSubmitButton.disabled = !activeSession || !applicationOpen || !hasProfile || !reviewResidenceConfirm?.checked || !bursaryReady || !docsReady;
   if (applicationReviewSubmitStatus && !applicationReviewSubmitStatus.dataset.submitting) {
-    if (!hasProfile) applicationReviewSubmitStatus.textContent = 'Complete your name and home address in your profile to continue.';
+    if (!activeSession) applicationReviewSubmitStatus.textContent = 'Sign in to submit this application.';
+    else if (!applicationOpen) applicationReviewSubmitStatus.textContent = 'Your saved application is unavailable. Return to your amount and documents, then try again.';
+    else if (!hasProfile) applicationReviewSubmitStatus.textContent = 'Complete your name and home address in your profile to continue.';
     else if (!reviewResidenceConfirm.checked) applicationReviewSubmitStatus.textContent = 'Confirm your home address above to continue.';
     else if (!bursaryStatus) applicationReviewSubmitStatus.textContent = 'Select whether you’re using a bursary.';
     else if (bursaryStatus === 'using' && !bursaryName) applicationReviewSubmitStatus.textContent = 'Enter the name of your bursary.';
     else if (!docsReady) applicationReviewSubmitStatus.textContent = 'All four required documents must be uploaded before you submit.';
     else applicationReviewSubmitStatus.textContent = '';
+    applicationReviewSubmitStatus.hidden = !applicationReviewSubmitStatus.textContent;
   }
 }
 function renderApplicationReview() {
@@ -521,6 +594,7 @@ async function loadStudentDocuments() {
       .filter(file => ['pending', 'reviewing', 'accepted'].includes(file.review?.review_status))
       .map(file => file.name.match(/^([a-z_]+)-/)?.[1])
       .filter(type => documentLabels[type]));
+    updateApplicationReviewButton();
     updateApplicationSubmitButton();
     renderApplicationJourney(activeApplication);
     let uploadedCount = 0;
@@ -570,6 +644,8 @@ async function loadStudentDocuments() {
       actions.append(download, remove); row.append(description, actions); documentList.append(row);
     }
   } catch (error) {
+    uploadedDocumentTypes = new Set();
+    updateApplicationReviewButton();
     const trackingNotReady = ['42P01', 'PGRST205'].includes(error?.code);
     documentList.replaceChildren(Object.assign(document.createElement('p'), { className: 'document-list-empty', textContent: trackingNotReady ? 'Document review tracking is not configured yet. Run the student document review status SQL migration, then refresh.' : 'We couldn’t load your document status. Check your connection and refresh.' }));
   }
@@ -724,6 +800,7 @@ applicationFinalSubmitButton?.addEventListener('click', async () => {
   if (applicationFinalSubmitButton.disabled) return;
   applicationFinalSubmitButton.disabled = true;
   applicationReviewSubmitStatus.dataset.submitting = 'true';
+  applicationReviewSubmitStatus.hidden = false;
   applicationReviewSubmitStatus.textContent = 'Submitting your application…';
   try {
     const bursaryStatus = reviewBursaryStatus.value;
@@ -749,6 +826,7 @@ applicationFinalSubmitButton?.addEventListener('click', async () => {
     applicationReviewSubmitStatus.dataset.submitting = '';
     updateApplicationReviewButton();
     applicationReviewSubmitStatus.textContent = message;
+    applicationReviewSubmitStatus.hidden = false;
   }
 });
 reviewBursaryStatus?.addEventListener('change', () => { renderApplicationReview(); });
@@ -1031,7 +1109,12 @@ function renderStep(step) {
   });
   const amountStage = activeStep === 2;
   const reviewStage = activeStep === 3;
-  if (controls) controls.hidden = reviewStage;
+  if (controls) {
+    controls.hidden = false;
+    controls.classList.toggle('is-review', reviewStage);
+  }
+  nextButton.hidden = reviewStage;
+  applicationFinalSubmitButton.hidden = !reviewStage;
   document.querySelector('#step-label').textContent = amountStage ? 'Choose an amount' : reviewStage ? 'Review your details' : 'Account access';
   document.querySelector('#step-count').textContent = amountStage ? 'Step 1 of 3' : reviewStage ? 'Step 3 of 3' : 'Account access';
   document.querySelector('#step-index').textContent = amountStage ? '01 / 03' : reviewStage ? '03 / 03' : 'ACCOUNT';
@@ -1058,7 +1141,7 @@ function renderStep(step) {
   appStatus.classList.remove('completion-note');
   appStatus.textContent = amountStage
     ? 'Your amount is saved when you continue. You can return here from Docs to change it.'
-    : reviewStage ? 'Your application is submitted only after you confirm the details below.'
+    : reviewStage ? 'Submit when your details are correct. Your next update will appear in Activity.'
       : 'Sign in with your SPU email to continue with your application.';
 }
 

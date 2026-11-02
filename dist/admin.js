@@ -192,6 +192,60 @@
     for (const doc of docs) docBlock.append(makeDocumentCard(doc,canReviewDocuments));
     if (!canReviewDocuments) docBlock.append(el('p','ops-message','Claim this application before opening or reviewing its documents.'));
     if (['submitted','under_review','action_required'].includes(app.status)&&['operations_admin','owner_admin'].includes(currentRole)) detail.append(makeDecisionBlock(app));
+    if (['operations_admin','owner_admin'].includes(currentRole) && (app.status === 'approved' || app.status === 'disbursed')) makeOfferBlock(app,data,detail);
+  }
+  function makeOfferBlock(app,data,detail) {
+    const section=el('section','ops-detail-block'); section.append(el('h3','','Offer & debit-order authorization'));
+    section.append(el('p','ops-security-note','Prepare the request with your approved mandate provider. Do not copy bank account numbers from a statement into Buddy. The student authorizes with the provider; verify its confirmation before recording funds sent.'));
+    detail.append(section);
+    client.rpc('buddy_admin_get_application_offer',{p_application_id:app.id}).then(({data:offer,error})=>{
+      if(selectedApplicationId!==app.id)return;
+      if(error){section.append(el('p','ops-message','Offer workflow is not available yet. Apply the Buddy offer and mandate migration, then refresh.'));return;}
+      if(offer){
+        const summary=el('dl','ops-details');
+        detailLine(summary,'Offer status',offer.offer_status);detailLine(summary,'Amount to student',`R${Number(offer.principal_amount).toLocaleString('en-ZA')}`);
+        detailLine(summary,'Interest',`R${Number(offer.interest_amount).toLocaleString('en-ZA')}`);detailLine(summary,'Initiation fee',`R${Number(offer.initiation_fee).toLocaleString('en-ZA')}`);
+        detailLine(summary,'Service fee',`R${Number(offer.service_fee).toLocaleString('en-ZA')}`);detailLine(summary,'Total repayment',`R${Number(offer.total_repayment).toLocaleString('en-ZA')}`);
+        detailLine(summary,'Repayment date',offer.repayment_date);detailLine(summary,'Mandate provider',offer.mandate_provider);detailLine(summary,'Provider request',offer.mandate_request_reference);detailLine(summary,'Authorization status',offer.mandate_status);
+        if(offer.student_authorization_reference)detailLine(summary,'Student reference',offer.student_authorization_reference);
+        if(offer.mandate_review_note)detailLine(summary,'Review note',offer.mandate_review_note);
+        section.append(summary);
+        if(offer.mandate_status==='proof_received'){
+          const note=document.createElement('textarea');note.maxLength=500;note.placeholder='Required if you return the request to the student';note.setAttribute('aria-label','Mandate review note');
+          const verifiedCheck=document.createElement('input');verifiedCheck.type='checkbox';
+          const verifiedLabel=el('label','ops-mandate-verification','I confirmed the active authorization directly with the named provider.');verifiedLabel.prepend(verifiedCheck);
+          const actions=el('div','ops-detail-actions');
+          const verify=el('button','ops-primary','Verify provider authorization');verify.type='button';verify.disabled=true;verifiedCheck.addEventListener('change',()=>{verify.disabled=!verifiedCheck.checked;});
+          const reject=el('button','','Request a correction');reject.type='button';
+          verify.addEventListener('click',()=>reviewMandate(true,''));reject.addEventListener('click',()=>reviewMandate(false,note.value.trim()));
+          async function reviewMandate(verified,reason){if(verified&&!verifiedCheck.checked){setMessage(byId('ops-queue-message'),'Confirm you checked the authorization with the named provider.',true);return;}if(!verified&&!reason){setMessage(byId('ops-queue-message'),'Add a clear correction request for the student.',true);return;}verify.disabled=reject.disabled=true;const result=await client.rpc('buddy_admin_review_mandate',{p_offer_id:offer.id,p_verified:verified,p_note:reason||null});if(result.error){verify.disabled=reject.disabled=false;setMessage(byId('ops-queue-message'),errorMessage(result.error,'Could not update mandate verification.'),true);return;}await Promise.all([openApplication(app.id),loadQueue(),loadAudit()]);}
+          actions.append(note,verifiedLabel,verify,reject);section.append(actions);
+        }
+        if(offer.offer_status==='accepted'&&offer.mandate_status==='verified'&&app.status==='approved'){
+          const ref=document.createElement('input');ref.type='text';ref.maxLength=120;ref.placeholder='Actual bank transfer confirmation reference';ref.setAttribute('aria-label','Bank transfer confirmation reference');
+          const send=el('button','ops-primary','Record funds sent');send.type='button';send.addEventListener('click',async()=>{if(!ref.value.trim()){setMessage(byId('ops-queue-message'),'Enter the transfer confirmation reference after funds have actually been sent.',true);return;}if(!window.confirm(`Confirm that R${Number(offer.principal_amount).toLocaleString('en-ZA')} has been sent to the student? This records a completed transfer.`))return;send.disabled=true;const result=await client.rpc('buddy_admin_record_disbursement',{p_offer_id:offer.id,p_payment_reference:ref.value.trim()});if(result.error){send.disabled=false;setMessage(byId('ops-queue-message'),errorMessage(result.error,'Could not record disbursement.'),true);return;}await Promise.all([openApplication(app.id),loadQueue(),loadAudit(),loadSummary()]);});
+          const group=el('div','ops-detail-actions');group.append(ref,send,el('p','ops-security-note','This records a transfer made through your bank or payment provider. It does not send money.'));section.append(group);
+        }
+        if(offer.offer_status==='offered'||offer.offer_status==='declined'||offer.offer_status==='withdrawn')section.append(el('p','ops-security-note','This application already has an offer record. Contact the student and resolve the existing offer before issuing another.'));
+        return;
+      }
+      if(app.status!=='approved'){section.append(el('p','ops-security-note','An offer can be prepared after the application is approved.'));return;}
+      const repeatLoan=Boolean(data.loan_history?.disbursed_this_calendar_year),requested=Number(app.requested_amount||0);
+      const principal=document.createElement('select');principal.setAttribute('aria-label','Approved amount');
+      for(let amount=100;amount<=requested;amount+=100){const option=document.createElement('option');option.value=String(amount);option.textContent=`R${amount.toLocaleString('en-ZA')}`;principal.append(option);}
+      const due=document.createElement('input');due.type='date';due.min=new Date().toISOString().slice(0,10);due.setAttribute('aria-label','Repayment date from verified allowance date');
+      const provider=document.createElement('input');provider.type='text';provider.maxLength=100;provider.placeholder='Mandate provider';provider.setAttribute('aria-label','Mandate provider');
+      const requestRef=document.createElement('input');requestRef.type='text';requestRef.maxLength=120;requestRef.placeholder='Provider request reference';requestRef.setAttribute('aria-label','Mandate request reference');
+      const url=document.createElement('input');url.type='url';url.maxLength=2000;url.placeholder='https://secure-provider.example/…';url.setAttribute('aria-label','Secure provider authorization URL');
+      const estimate=el('p','ops-security-note');
+      function updateEstimate(){const amount=Number(principal.value||0),interest=Math.round(amount*(repeatLoan?0.03:0.05)),initiation=Math.round(amount*0.15),service=Math.min(60,Math.round(amount*(repeatLoan?0.22:0.20)));estimate.textContent=`${repeatLoan?'Repeat loan this calendar year · 3%':'First loan this calendar year · 5%'} · R${amount} + R${interest} interest + R${initiation} initiation + R${service} service = R${amount+interest+initiation+service}. Repayment date: one payment on the date you enter.`;}
+      principal.addEventListener('change',updateEstimate);updateEstimate();
+      const fields=el('div','ops-offer-fields');
+      const field=(label,input)=>{const wrap=el('label','',label);wrap.append(input);return wrap;};
+      fields.append(field('Approved amount',principal),field('Verified repayment date',due),field('Provider',provider),field('Provider request reference',requestRef),field('Secure authorization URL',url));
+      const issue=el('button','ops-primary','Send offer to student');issue.type='button';issue.addEventListener('click',async()=>{if(!due.value||!provider.value.trim()||!requestRef.value.trim()||!url.value.trim()){setMessage(byId('ops-queue-message'),'Add the verified repayment date and the mandate provider request details first.',true);return;}issue.disabled=true;const result=await client.rpc('buddy_admin_send_offer',{p_application_id:app.id,p_principal_amount:Number(principal.value),p_repayment_date:due.value,p_mandate_provider:provider.value.trim(),p_mandate_request_reference:requestRef.value.trim(),p_mandate_authorization_url:url.value.trim()});if(result.error){issue.disabled=false;setMessage(byId('ops-queue-message'),errorMessage(result.error,'Could not send the written offer.'),true);return;}await Promise.all([openApplication(app.id),loadQueue(),loadAudit()]);});
+      section.append(fields,estimate,issue);
+    });
   }
   function makeDocumentCard(doc,canReviewDocuments) {
     const card=el('article','ops-doc'); const head=el('div','ops-doc-head');

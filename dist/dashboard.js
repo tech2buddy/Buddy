@@ -24,6 +24,7 @@ function renderRoute({ focus = false, scroll = false } = {}) {
   if (routeKey === renderedRouteKey) return;
   renderedRouteKey = routeKey;
   activeSection = route.section;
+  document.querySelector('#dashboard-main').classList.toggle('has-application-review', activeSection === 'application' && route.step === 3);
   document.querySelectorAll('[data-view]').forEach(panel => { panel.hidden = panel.dataset.view !== activeSection; });
   document.querySelectorAll('[data-view-link]').forEach(link => {
     if (link.dataset.viewLink === activeSection) link.setAttribute('aria-current', 'page');

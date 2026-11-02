@@ -70,6 +70,9 @@
 #account-dialog .auth-message:empty{display:none}
 #account-dialog .auth-message[data-kind="error"]{color:#b8233d}
 #account-dialog .auth-message[data-kind="success"]{color:#137a4a}
+#account-dialog .auth-forgot-password{justify-self:center;border:0;background:transparent;color:#69758d;font:700 11px Manrope,system-ui,sans-serif;padding:7px 12px;cursor:pointer}
+#account-dialog .auth-forgot-password:hover{color:#e33b56}
+#account-dialog .auth-forgot-password:focus-visible{outline:2px solid var(--coral);outline-offset:2px;border-radius:8px}
 #account-dialog .account-password-wrap{position:relative;display:flex;align-items:center}
 #account-dialog .account-password-wrap input{padding-right:54px}
 #account-dialog .account-show-password{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:#748097;cursor:pointer;transition:background .18s,color .18s}

@@ -53,6 +53,13 @@
     return target.toString();
   };
 
+  const passwordRecoveryRedirect = () => {
+    const target = new URL('index.html', window.location.origin);
+    target.searchParams.set('open', 'account');
+    target.searchParams.set('recovery', '1');
+    return target.toString();
+  };
+
   const completeSignIn = () => {
     const returnPath = safeReturnPath();
     if (returnPath) window.location.replace(`${window.location.origin}${returnPath}`);
@@ -212,16 +219,17 @@
         </label>
         <div class="account-field">
           <label for="account-password">Password</label>
-          <div class="account-password-wrap"><input id="account-password" name="password" type="password" autocomplete="new-password" minlength="12" required><button class="account-show-password" type="button" data-password-toggle="account-password" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div>
+          <div class="account-password-wrap"><input id="account-password" name="password" type="password" autocomplete="new-password" required><button class="account-show-password" type="button" data-password-toggle="account-password" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div>
           <small id="password-help">Use at least 12 characters.</small>
         </div>
         <div class="account-field" id="confirm-password-field">
           <label for="account-confirm-password">Confirm password</label>
-          <div class="account-password-wrap"><input id="account-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="12" required><button class="account-show-password" type="button" data-password-toggle="account-confirm-password" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div>
+          <div class="account-password-wrap"><input id="account-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required><button class="account-show-password" type="button" data-password-toggle="account-confirm-password" aria-label="Show confirmation password" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div>
         </div>
         <p class="account-opening-note">Your university email secures your Buddy account and keeps your application updates connected to you.</p>
         <p class="auth-message" id="account-auth-message" role="status" aria-live="polite"></p>
         <button class="button button-dark account-submit" id="account-auth-submit" type="submit">Create account <span aria-hidden="true">↗</span></button>
+        <button class="auth-forgot-password" id="auth-forgot-password" type="button" hidden>Forgot password?</button>
       </form>
       <section class="auth-verification-success" id="auth-verification-success" aria-live="polite" tabindex="-1" hidden>
         <div class="auth-success-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="m13 25 7.5 7.5L35 17"/></svg></div>
@@ -244,6 +252,7 @@
   const passwordHelp = document.querySelector('#password-help');
   const message = document.querySelector('#account-auth-message');
   const submit = document.querySelector('#account-auth-submit');
+  const forgotPassword = document.querySelector('#auth-forgot-password');
   const signedIn = document.querySelector('#account-signed-in');
   let profileDialog = null;
   let profileCheck = null;
@@ -381,14 +390,28 @@
   const setMode = nextMode => {
     mode = nextMode;
     const signup = mode === 'signup';
+    const login = mode === 'login';
+    const passwordEntry = signup || mode === 'reset';
+    document.querySelector('.account-options').hidden = mode === 'recover' || mode === 'reset';
     signupTab.setAttribute('aria-selected', String(signup));
-    loginTab.setAttribute('aria-selected', String(!signup));
-    confirmField.hidden = !signup;
-    confirmInput.required = signup;
-    passwordInput.autocomplete = signup ? 'new-password' : 'current-password';
+    loginTab.setAttribute('aria-selected', String(login));
+    document.querySelector('#account-dialog h2').innerHTML = mode === 'recover'
+      ? 'Reset your<br><span>password.</span>'
+      : mode === 'reset' ? 'Choose a new<br><span>password.</span>' : 'Your student<br><span>account.</span>';
+    document.querySelector('#account-dialog .account-lead').textContent = mode === 'recover'
+      ? 'We’ll email you a secure link to reset your password.'
+      : mode === 'reset' ? 'Choose a new password for your Buddy account.'
+        : 'Sign up with your SPU email or sign in to continue.';
+    passwordInput.closest('.account-field').hidden = !passwordEntry;
+    confirmField.hidden = !(signup || mode === 'reset');
+    passwordInput.required = passwordEntry;
+    confirmInput.required = signup || mode === 'reset';
+    passwordInput.autocomplete = signup || mode === 'reset' ? 'new-password' : 'current-password';
     confirmInput.value = '';
-    passwordHelp.textContent = signup ? 'Use at least 12 characters.' : 'Enter your password.';
-    submit.innerHTML = `${signup ? 'Create account' : 'Log in'} <span aria-hidden="true">↗</span>`;
+    passwordHelp.textContent = signup || mode === 'reset' ? 'Use at least 12 characters.' : 'Enter your password.';
+    submit.innerHTML = `${signup ? 'Create account' : login ? 'Log in' : mode === 'recover' ? 'Email reset link' : 'Save new password'} <span aria-hidden="true">↗</span>`;
+    forgotPassword.hidden = !login;
+    document.querySelector('.account-opening-note').hidden = mode === 'recover' || mode === 'reset';
     setMessage('');
   };
 
@@ -453,6 +476,11 @@
     passwordInput.focus();
   });
 
+  forgotPassword.addEventListener('click', () => {
+    setMode('recover');
+    emailInput.focus();
+  });
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const email = emailInput.value.trim().toLowerCase();
@@ -461,17 +489,17 @@
       setMessage('Use your SPU-issued @spu.ac.za email address.', 'error');
       return;
     }
-    if (password.length < 12) {
+    if ((mode === 'signup' || mode === 'reset') && password.length < 12) {
       setMessage('Choose a password with at least 12 characters.', 'error');
       return;
     }
-    if (mode === 'signup' && password !== confirmInput.value) {
+    if ((mode === 'signup' || mode === 'reset') && password !== confirmInput.value) {
       setMessage('Your passwords don’t match.', 'error');
       return;
     }
 
     submit.disabled = true;
-    setMessage(mode === 'signup' ? 'Creating your account…' : 'Signing you in…');
+    setMessage(mode === 'signup' ? 'Creating your account…' : mode === 'login' ? 'Signing you in…' : mode === 'recover' ? 'Sending a secure reset link…' : 'Updating your password…');
     try {
       if (mode === 'signup') {
         const { data, error } = await client.auth.signUp({
@@ -495,11 +523,24 @@
           verificationSuccess.hidden = false;
           verificationSuccess.focus({ preventScroll: true });
         }
-      } else {
+      } else if (mode === 'login') {
         const { data, error } = await client.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setMessage('You’re signed in.', 'success');
         await ensureProfile(data.user);
+      } else if (mode === 'recover') {
+        const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: passwordRecoveryRedirect() });
+        if (error) throw error;
+        setMessage('If an account exists for that email, we’ve sent a secure password reset link.', 'success');
+      } else {
+        const { error } = await client.auth.updateUser({ password });
+        if (error) throw error;
+        await client.auth.signOut();
+        passwordInput.value = '';
+        confirmInput.value = '';
+        setMode('login');
+        emailInput.value = email;
+        setMessage('Password updated. Sign in with your new password.', 'success');
       }
     } catch (error) {
       setMessage(error?.message || 'We couldn’t complete account access. Please try again.', 'error');
@@ -509,6 +550,11 @@
   });
 
   client.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      setMode('reset');
+      if (!dialog.open) dialog.showModal();
+      passwordInput.focus({ preventScroll: true });
+    }
     window.dispatchEvent(new CustomEvent('buddy-auth-state', { detail: { event, session } }));
   });
 

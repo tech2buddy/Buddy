@@ -51,7 +51,15 @@ function navigate(section, step = 1) {
   }
   const hash = section === 'application' ? `#application/${step}` : `#${section}`;
   const current = readRoute();
-  if (current.section === section && (section !== 'application' || current.step === step)) return;
+  if (current.section === section && (section !== 'application' || current.step === step)) {
+    if (section === 'activity') {
+      const updates = document.querySelector('#activity-feed-card');
+      updates?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      updates?.focus({ preventScroll: true });
+      loadAccountWorkspace();
+    }
+    return;
+  }
   window.history.pushState(null, '', hash);
   renderRoute({ focus: true, scroll: true });
 }

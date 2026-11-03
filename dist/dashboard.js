@@ -24,7 +24,6 @@ function renderRoute({ focus = false, scroll = false } = {}) {
   if (routeKey === renderedRouteKey) return;
   renderedRouteKey = routeKey;
   activeSection = route.section;
-  document.querySelector('#dashboard-main').classList.toggle('has-application-review', activeSection === 'application' && route.step === 3);
   document.querySelector('.application-controls').hidden = activeSection !== 'application';
   document.querySelectorAll('[data-view]').forEach(panel => { panel.hidden = panel.dataset.view !== activeSection; });
   document.querySelectorAll('[data-view-link]').forEach(link => {
@@ -1112,8 +1111,7 @@ function renderStep(step) {
   const amountStage = activeStep === 2;
   const reviewStage = activeStep === 3;
   if (controls) {
-    controls.hidden = false;
-    controls.classList.toggle('is-review', reviewStage);
+    controls.hidden = reviewStage;
   }
   nextButton.hidden = reviewStage;
   applicationFinalSubmitButton.hidden = !reviewStage;

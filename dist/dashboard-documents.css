@@ -72,7 +72,8 @@
 @media(max-width:520px){.documents-upload-intro{font-size:12px}.document-field>label{font-size:10px}.document-upload-form select{font-size:12px}.document-drop-copy strong{font-size:10px}.document-drop-copy small,.document-file-help{font-size:8px}.document-consent{font-size:9px;line-height:1.55}.document-upload-form .documents-apply-link{font-size:11px}.document-upload-list-heading strong{font-size:11px}.document-list-empty{font-size:9px}.document-upload-description strong{font-size:9px}.document-upload-description small{font-size:8px}.document-boundary p{font-size:8px}}
 
 .application-review-actions{margin-top:20px;padding-top:17px;border-top:1px solid #e9edf3}
-.application-review-actions .application-review-submit{display:flex;justify-content:space-between;min-height:54px;margin:0;padding:0 18px;border-radius:15px;font-size:12px}
+.application-review-actions .application-review-submit{display:flex;justify-content:space-between;min-height:54px;margin:0;padding:0 18px;border-radius:15px;background:#091222;color:#fff;font-size:12px}
+.application-review-actions .application-review-submit:hover{background:#1b2942}
 .application-review-actions .application-review-submit svg{width:17px;height:17px}
 .application-review-actions .application-review-submit:disabled{opacity:1;background:#a8adb7;color:#fff;cursor:not-allowed}
 .application-review-actions>small{display:block;margin-top:9px;color:#8792a4;font-size:9px;line-height:1.5;text-align:center}

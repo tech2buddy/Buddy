@@ -153,6 +153,12 @@
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'student_activity_events', filter: `user_id=eq.${user.id}`
         }, onUpdate)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'student_document_reviews', filter: `user_id=eq.${user.id}`
+        }, onUpdate)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'buddy_application_offers', filter: `user_id=eq.${user.id}`
+        }, onUpdate)
         .subscribe();
       return { data: { unsubscribe: () => client.removeChannel(channel) }, error: null };
     },
